@@ -58,10 +58,9 @@ if ! venv/bin/python -c "import uvicorn" 2>/dev/null; then
 fi
 echo -e "${GREEN}✅ uvicorn установлен корректно${NC}\n"
 
-# Создание структуры (если нужна)
-echo -e "${GREEN}[8/8] Создание необходимой структуры папок...${NC}"
+# Создание структуры и настройка прав доступа
+echo -e "${GREEN}[8/8] Создание структуры папок и настройка прав...${NC}"
 mkdir -p backend frontend/templates frontend/static frontend/static/emotions
-
 chmod +x run.sh
 
 echo -e "\n${CYAN}=========================================${NC}"
