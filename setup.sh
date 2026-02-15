@@ -26,17 +26,15 @@ source venv/bin/activate
 
 echo -e "${GREEN}[+] Инъекция зависимостей (pip install)...${NC}"
 pip install --upgrade pip
-pip install fastapi "uvicorn[standard]" psutil jinja2 pydantic requests
+pip install -r requirements.txt
 
 # 4. Создание структуры папок (если нет)
 echo -e "${GREEN}[+] Проверка файловой системы...${NC}"
-mkdir -p templates
-mkdir -p static
+mkdir -p backend
+mkdir -p frontend/templates
+mkdir -p frontend/static
 
-# 5. Создание requirements.txt (для напарника)
-pip freeze > requirements.txt
-echo -e "${GREEN}[+] Список зависимостей сохранен в requirements.txt${NC}"
-
+# 5. Успешное завершение
 echo -e "${CYAN}=========================================${NC}"
 echo -e "${CYAN}   💀 SYSTEM READY. DAEMON IS WAITING.   ${NC}"
 echo -e "${CYAN}=========================================${NC}"
