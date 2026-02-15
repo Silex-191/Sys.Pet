@@ -16,11 +16,16 @@
             --scanline: rgba(0, 255, 0, 0.05);
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
+            padding: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -29,12 +34,13 @@
         }
 
         /* CRT Effect Overlay */
-        .crt::before {
+        body::before {
             content: " ";
             display: block;
-            position: absolute;
+            position: fixed;
             top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             z-index: 2;
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
@@ -43,13 +49,13 @@
         .dashboard {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto 1fr auto;
-            gap: 20px;
-            width: 90%;
-            max-width: 800px;
+            grid-template-rows: auto auto 1fr auto;
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
             padding: 20px;
             border: 2px solid var(--neon-green);
-            box-shadow: 0 0 15px var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
             background: var(--panel-bg);
             position: relative;
             z-index: 1;
@@ -63,327 +69,506 @@
             padding-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        header h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.5em;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
         }
 
         .status-badge {
             font-size: 0.8em;
             background: var(--neon-green);
             color: black;
-            padding: 2px 5px;
+            padding: 3px 8px;
             font-weight: bold;
+            border-radius: 3px;
+            display: inline-block;
         }
 
-        /* Main Pet Area */
+        .status-badge.dead {
+            background: #f00;
+            color: white;
+        }
+
+        .status-badge.evolving {
+            background: var(--neon-pink);
+            color: white;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Pet Container */
         .pet-container {
             grid-column: 1 / -1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 250px;
+            height: 280px;
             border: 1px solid #333;
             background: #0a0a0a;
             position: relative;
             overflow: hidden;
+            margin-bottom: 10px;
         }
 
         .pet-sprite {
-            font-size: 100px;
+            font-size: 120px;
             transition: transform 0.3s ease, filter 0.3s ease;
             cursor: pointer;
-            filter: drop-shadow(0 0 10px var(--neon-green));
-            /* Точка трансформации снизу, чтобы он рос вширь от земли */
-            transform-origin: bottom center; 
+            filter: drop-shadow(0 0 15px var(--neon-green));
+            user-select: none;
         }
 
-        .pet-message {
+        .pet-sprite:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 25px var(--neon-green));
+        }
+
+        .pet-sprite:active {
+            transform: scale(0.95);
+        }
+
+        .pet-name {
             margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
             color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .pet-status-msg {
             font-size: 0.9em;
+            color: var(--neon-pink);
+            margin-top: 5px;
+            height: 20px;
         }
 
         /* Stats Grid */
-        .stats-panel {
+        .stats {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .stat-box {
-            display: flex;
-            flex-direction: column;
+        .stat {
+            border: 1px solid var(--neon-green);
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 3px;
         }
 
         .stat-label {
             font-size: 0.8em;
+            color: var(--neon-green);
             margin-bottom: 5px;
-            color: #888;
+            text-transform: uppercase;
         }
 
-        .progress-bar {
+        .stat-bar {
+            width: 100%;
             height: 20px;
             background: #222;
             border: 1px solid #444;
+            border-radius: 2px;
+            overflow: hidden;
             position: relative;
         }
 
-        .progress-fill {
+        .stat-fill {
             height: 100%;
-            background: var(--neon-green);
-            width: 0%;
-            transition: width 0.5s ease, background-color 0.3s;
-            box-shadow: 0 0 5px var(--neon-green);
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+            transition: width 0.3s ease;
+            position: relative;
         }
 
-        /* Input Area */
-        .feed-area {
+        .stat-fill::after {
+            content: attr(data-value);
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8em;
+            font-weight: bold;
+            color: black;
+        }
+
+        .stat-fill.danger {
+            background: linear-gradient(90deg, #f00, #ff6600);
+        }
+
+        .stat-fill.warn {
+            background: linear-gradient(90deg, #ff6600, var(--neon-pink));
+        }
+
+        /* Code Input */
+        .code-input-section {
             grid-column: 1 / -1;
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
-        textarea {
-            flex-grow: 1;
-            background: #000;
+        .code-input-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: var(--neon-green);
+            text-transform: uppercase;
+        }
+
+        .code-input {
+            width: 100%;
+            padding: 10px;
+            background: #0a0a0a;
             color: var(--neon-green);
             border: 1px solid var(--neon-green);
-            padding: 10px;
-            font-family: inherit;
-            resize: none;
-            height: 60px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            resize: vertical;
+            min-height: 80px;
+            border-radius: 3px;
         }
 
-        textarea:focus {
+        .code-input:focus {
             outline: none;
-            box-shadow: 0 0 10px var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+            border-color: var(--neon-blue);
+        }
+
+        /* Buttons */
+        .buttons {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
         }
 
         button {
-            background: var(--neon-green);
-            color: black;
-            border: none;
-            padding: 0 20px;
-            font-family: inherit;
-            font-weight: bold;
+            padding: 10px 15px;
+            background: transparent;
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
             cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
             text-transform: uppercase;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            border-radius: 3px;
         }
 
         button:hover {
-            background: #fff;
-            box-shadow: 0 0 15px #fff;
+            background: var(--neon-green);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-green);
+            transform: scale(1.05);
         }
 
-        /* Animations & Effects */
-        .shaking {
-            animation: shake 0.5s infinite;
+        button:active {
+            transform: scale(0.95);
         }
 
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        button.danger {
+            border-color: #f00;
+            color: #f00;
         }
 
-        /* Effect when code is tasty */
-        .success-flash {
-            animation: flashSuccess 0.5s ease-out;
-        }
-        @keyframes flashSuccess {
-            0% { box-shadow: 0 0 0 var(--neon-green); }
-            50% { box-shadow: 0 0 50px var(--neon-green) inset; }
-            100% { box-shadow: 0 0 0 var(--neon-green); }
+        button.danger:hover {
+            background: #f00;
+            color: white;
+            box-shadow: 0 0 15px #f00;
         }
 
-        /* Helpers for styling specific bars */
-        .bar-ram .progress-fill { background: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
-        .bar-cpu .progress-fill { background: var(--neon-pink); box-shadow: 0 0 5px var(--neon-pink); }
-        
+        .success-msg {
+            color: var(--neon-green);
+            background: rgba(0, 255, 0, 0.1);
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-msg {
+            color: #f00;
+            background: rgba(255, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid var(--neon-green);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                padding: 15px;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pet-sprite {
+                font-size: 80px;
+            }
+        }
     </style>
 </head>
-<body class="crt">
-
-    <div class="dashboard" id="mainDashboard">
+<body>
+    <div class="dashboard">
+        <!-- HEADER -->
         <header>
-            <h1>SYS.PET <span id="courseBadge" class="status-badge">КУРС 1</span></h1>
-            <div style="font-size: 10px; margin-top: 5px; opacity: 0.7;">
-                HOST: LOCALHOST:8000 | STATUS: <span id="connectionStatus">CONNECTING...</span>
-            </div>
+            <h1>🎮 SYS.PET 🎮</h1>
+            <p style="margin: 5px 0; font-size: 0.9em;">
+                Тамагочи, завязанный на <span style="color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue);">системных показателях</span>
+            </p>
+            <div id="status-badge" class="status-badge">LOADING...</div>
         </header>
 
+        <!-- PET CONTAINER -->
         <div class="pet-container">
-            <div id="petSprite" class="pet-sprite">🥚</div>
-            <div id="statusMessage" class="pet-message">Инициализация...</div>
+            <div class="pet-sprite" id="pet-sprite" title="Клацни, чтобы погладить!">👶</div>
+            <div class="pet-name" id="pet-name">sys.pet</div>
+            <div class="pet-status-msg" id="pet-status-msg">Инициализация...</div>
         </div>
 
-        <div class="stats-panel">
-            <div class="stat-box">
-                <span class="stat-label">HEALTH (HP)</span>
-                <div class="progress-bar"><div id="hpBar" class="progress-fill" style="width: 50%;"></div></div>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">HAPPINESS</span>
-                <div class="progress-bar"><div id="happyBar" class="progress-fill" style="width: 50%;"></div></div>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">RAM LOAD (WEIGHT)</span>
-                <div class="progress-bar bar-ram"><div id="ramBar" class="progress-fill" style="width: 20%;"></div></div>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">CPU LOAD (FATIGUE)</span>
-                <div class="progress-bar bar-cpu"><div id="cpuBar" class="progress-fill" style="width: 10%;"></div></div>
-            </div>
+        <!-- STATS -->
+        <div class="stats" id="stats">
+            <!-- Заполняется JS -->
         </div>
 
-        <div class="feed-area">
-            <textarea id="codeArea" placeholder="Вставьте Python код с проверкой четности..."></textarea>
-            <button onclick="feedPet()">СКОРМИТЬ<br>КОД</button>
+        <!-- CODE INPUT -->
+        <div class="code-input-section">
+            <label for="code-input">Корми питомца кодом:</label>
+            <textarea id="code-input" class="code-input" placeholder="Вставь код здесь... Питомец любит правильные проверки на четность!"></textarea>
         </div>
+
+        <!-- BUTTONS -->
+        <div class="buttons">
+            <button id="feed-btn">🍽️ Покормить</button>
+            <button id="rest-btn">😴 Отдохнуть</button>
+            <button id="reset-btn" class="danger">⚡ Перезагрузить</button>
+        </div>
+
+        <!-- MESSAGES -->
+        <div id="success-msg" class="success-msg"></div>
+        <div id="error-msg" class="error-msg"></div>
     </div>
 
     <script>
-        /* --- JS: Logic --- */
-        const API_URL = 'http://localhost:8000/api';
-        
-        // DOM Elements
-        const elSprite = document.getElementById('petSprite');
-        const elMessage = document.getElementById('statusMessage');
-        const elCourse = document.getElementById('courseBadge');
-        const elConn = document.getElementById('connectionStatus');
-        const elDashboard = document.getElementById('mainDashboard');
-
-        // Bars
-        const barHp = document.getElementById('hpBar');
-        const barHappy = document.getElementById('happyBar');
-        const barRam = document.getElementById('ramBar');
-        const barCpu = document.getElementById('cpuBar');
-
-        // Main Loop
-        async function updateStats() {
-            try {
-                const response = await fetch(`${API_URL}/pet`);
-                if (!response.ok) throw new Error("Offline");
-                
-                const data = await response.json();
-                render(data);
-                
-                elConn.innerText = "ONLINE";
-                elConn.style.color = "var(--neon-green)";
-            } catch (e) {
-                console.error(e);
-                elConn.innerText = "OFFLINE (Backend down?)";
-                elConn.style.color = "var(--neon-pink)";
+        // ===== API HELPER =====
+        class SysPetAPI {
+            constructor(baseUrl = 'http://localhost:8000') {
+                this.baseUrl = baseUrl;
             }
-        }
 
-        // Render Function
-        function render(data) {
-            // 1. Update Text
-            elMessage.innerText = `> ${data.status_message}`;
-            elCourse.innerText = `КУРС ${data.course}`;
-            elSprite.innerText = data.skin;
-
-            // 2. Update Bars
-            barHp.style.width = `${data.hp}%`;
-            barHappy.style.width = `${data.happiness}%`;
-            
-            // RAM = Weight Bar
-            // Если RAM > 80, делаем бар красным/розовым для предупреждения
-            barRam.style.width = `${data.weight}%`; 
-            
-            // CPU = Fatigue Bar
-            barCpu.style.width = `${data.fatigue}%`;
-
-            // 3. VISUALIZATION LOGIC
-            
-            // --- RAM (Weight) -> Scale X ---
-            // Если вес 50 (норма), scale = 1. Если вес 100, scale = 2.0 (очень широкий)
-            // Формула: 1 + (weight - 50) / 50. Минимум 0.8 (если худой).
-            let scaleX = 1;
-            if (data.weight > 50) {
-                scaleX = 1 + ((data.weight - 50) / 40); 
-            } else {
-                scaleX = 0.8 + (data.weight / 250); // Чуть уже, если голодный
+            async getPetState() {
+                return this.get('/api/pet');
             }
-            // Ограничим максимальную ширину, чтобы не порвать экран
-            if (scaleX > 3) scaleX = 3; 
-            
-            elSprite.style.transform = `scaleX(${scaleX}) scaleY(${1/Math.sqrt(scaleX)})`; // Сохраняем объем: если шире, то ниже
 
-            // --- CPU (Fatigue) -> Jitter/Shake ---
-            if (data.fatigue > 80) {
-                elSprite.classList.add('shaking');
-                elMessage.innerText += " [CPU OVERLOAD]";
-            } else {
-                elSprite.classList.remove('shaking');
+            async feedPet(code) {
+                const params = new URLSearchParams({ code });
+                return this.post('/api/feed', params);
             }
-        }
 
-        // Feeding Handler
-        async function feedPet() {
-            const code = document.getElementById('codeArea').value;
-            if (!code.trim()) return;
+            async petAction(action) {
+                const params = new URLSearchParams({ action });
+                return this.post('/api/pet-action', params);
+            }
 
-            // Simple visual feedback immediately
-            document.querySelector('button').innerText = "SENDING...";
+            async get(endpoint) {
+                const response = await fetch(this.baseUrl + endpoint);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            }
 
-            try {
-                const response = await fetch(`${API_URL}/feed`, {
+            async post(endpoint, data) {
+                const response = await fetch(this.baseUrl + endpoint, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
                 });
-                
-                const result = await response.json();
-                
-                if (result.is_tasty) {
-                    // Success Effect
-                    triggerSuccessEffect();
-                    elMessage.innerText = "ВКУСНО! СПАСИБО!";
-                } else {
-                    // Fail Effect
-                    elMessage.innerText = "ФУ! ЭТО НЕ ТО!";
-                    elDashboard.style.borderColor = "var(--neon-pink)";
-                    setTimeout(() => elDashboard.style.borderColor = "var(--neon-green)", 500);
-                }
-            } catch (e) {
-                alert("Ошибка отправки (Бэкенд недоступен)");
-            } finally {
-                document.querySelector('button').innerHTML = "СКОРМИТЬ<br>КОД";
-                document.getElementById('codeArea').value = "";
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
             }
         }
 
-        // Visual Effects
-        function triggerSuccessEffect() {
-            // Flash screen
-            elDashboard.classList.add('success-flash');
-            
-            // Temporary happy emoji override
-            const oldSkin = elSprite.innerText;
-            elSprite.innerText = "😋"; 
-            
-            setTimeout(() => {
-                elDashboard.classList.remove('success-flash');
-                // Скин вернется сам при следующем апдейте updateStats
-            }, 1000);
+        // ===== UI HELPER =====
+        const api = new SysPetAPI();
+        let petState = null;
+
+        // Элементы DOM
+        const petSprite = document.getElementById('pet-sprite');
+        const petName = document.getElementById('pet-name');
+        const petStatusMsg = document.getElementById('pet-status-msg');
+        const statusBadge = document.getElementById('status-badge');
+        const statsContainer = document.getElementById('stats');
+        const codeInput = document.getElementById('code-input');
+        const feedBtn = document.getElementById('feed-btn');
+        const restBtn = document.getElementById('rest-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const successMsg = document.getElementById('success-msg');
+        const errorMsg = document.getElementById('error-msg');
+
+        // ===== RENDER FUNCTIONS =====
+        function renderStats() {
+            if (!petState) return;
+
+            statsContainer.innerHTML = '';
+
+            const stats = [
+                { label: 'HP', value: petState.hp, max: 100 },
+                { label: 'ГОЛОД', value: 100 - petState.hunger, max: 100 },
+                { label: 'УСТАЛОСТЬ', value: petState.fatigue, max: 100 },
+                { label: 'СЧАСТЬЕ', value: petState.happiness, max: 100 },
+                { label: 'ВЕС (RAM)', value: petState.weight, max: 100 },
+                { label: 'УРОВЕНЬ', value: petState.course, max: 10 },
+            ];
+
+            stats.forEach(stat => {
+                const percent = Math.min(100, (stat.value / stat.max) * 100);
+                const isDanger = stat.label === 'HP' && percent < 30;
+                const isWarn = percent > 80 && stat.label !== 'HP';
+
+                const statDiv = document.createElement('div');
+                statDiv.className = 'stat';
+                statDiv.innerHTML = `
+                    <div class="stat-label">${stat.label}</div>
+                    <div class="stat-bar">
+                        <div class="stat-fill ${isDanger ? 'danger' : isWarn ? 'warn' : ''}"
+                             style="width: ${percent}%"
+                             data-value="${Math.round(stat.value)}/${stat.max}"></div>
+                    </div>
+                `;
+                statsContainer.appendChild(statDiv);
+            });
         }
 
-        // Start Loop (Every 1s)
-        setInterval(updateStats, 1000);
-        updateStats(); // First run
+        function renderPet() {
+            if (!petState) return;
 
+            petName.textContent = petState.name;
+            petStatusMsg.textContent = petState.status_message;
+            petSprite.textContent = petState.skin;
+
+            statusBadge.textContent = petState.status.toUpperCase();
+            statusBadge.className = 'status-badge ' + petState.status;
+
+            renderStats();
+        }
+
+        function showMessage(text, isError = false) {
+            const el = isError ? errorMsg : successMsg;
+            el.textContent = text;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // ===== UPDATE LOOP =====
+        async function updatePet() {
+            try {
+                petState = await api.getPetState();
+                renderPet();
+            } catch (err) {
+                console.error('Update error:', err);
+            }
+        }
+
+        setInterval(updatePet, 500);  // Обновлять каждые 500ms
+
+        // ===== EVENT LISTENERS =====
+        feedBtn.addEventListener('click', async () => {
+            const code = codeInput.value.trim();
+            if (!code) {
+                showMessage('Введи код!', true);
+                return;
+            }
+
+            feedBtn.disabled = true;
+            feedBtn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const result = await api.feedPet(code);
+                if (result.success) {
+                    showMessage(result.message);
+                    codeInput.value = '';
+                } else {
+                    showMessage(result.message, true);
+                }
+                await updatePet();
+            } catch (err) {
+                showMessage('Ошибка: ' + err.message, true);
+            } finally {
+                feedBtn.disabled = false;
+                feedBtn.innerHTML = '🍽️ Покормить';
+            }
+        });
+
+        codeInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                feedBtn.click();
+            }
+        });
+
+        restBtn.addEventListener('click', async () => {
+            try {
+                const result = await api.petAction('rest');
+                showMessage(result.message);
+                await updatePet();
+            } catch (err) {
+                showMessage('Ошибка: ' + err.message, true);
+            }
+        });
+
+        petSprite.addEventListener('click', async () => {
+            try {
+                const result = await api.petAction('pet');
+                showMessage('Вы погладили питомца! 💕');
+                await updatePet();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        resetBtn.addEventListener('click', async () => {
+            if (confirm('Точно перезагрузить питомца?')) {
+                try {
+                    const result = await api.petAction('reset');
+                    showMessage('🌀 Питомец перезагружен!');
+                    await updatePet();
+                } catch (err) {
+                    showMessage('Ошибка: ' + err.message, true);
+                }
+            }
+        });
+
+        // ===== INIT =====
+        updatePet();
     </script>
 </body>
 </html>

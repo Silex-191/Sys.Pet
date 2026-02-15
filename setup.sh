@@ -1,43 +1,50 @@
 #!/bin/bash
 
-# Цвета для красоты
+# Цвета
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 echo -e "${CYAN}=========================================${NC}"
-echo -e "${CYAN}   👾 SYSPET: INSTALLATION PROTOCOL 👾   ${NC}"
-echo -e "${CYAN}=========================================${NC}"
+echo -e "${CYAN}   👾 SYSPET: SETUP PROTOCOL 👾        ${NC}"
+echo -e "${CYAN}=========================================${NC}\n"
 
-# 1. Проверка Python
+# Проверка Python
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}[ERROR] Python3 не найден! Установи его: sudo apt install python3${NC}"
+    echo -e "${RED}❌ Python3 не найден!${NC}"
+    echo "Установи: sudo apt install python3 python3-pip python3-venv"
     exit 1
 fi
 
-# 2. Создание виртуального окружения
-echo -e "${GREEN}[+] Создаем изолированную капсулу (venv)...${NC}"
+echo -e "${GREEN}✅ Python3 найден: $(python3 --version)${NC}\n"
+
+# Создание venv
+echo -e "${GREEN}[1/4] Создание виртуального окружения...${NC}"
 python3 -m venv venv
 
-# 3. Активация и установка
-echo -e "${GREEN}[+] Активация нейроинтерфейса...${NC}"
+# Активация
+echo -e "${GREEN}[2/4] Активация окружения...${NC}"
 source venv/bin/activate
 
-echo -e "${GREEN}[+] Инъекция зависимостей (pip install)...${NC}"
-pip install --upgrade pip
-pip install -r requirements.txt
+# Обновление pip
+echo -e "${GREEN}[3/4] Обновление pip...${NC}"
+pip install --upgrade pip setuptools wheel > /dev/null 2>&1
 
-# 4. Создание структуры папок (если нет)
-echo -e "${GREEN}[+] Проверка файловой системы...${NC}"
-mkdir -p backend
-mkdir -p frontend/templates
-mkdir -p frontend/static
+# Установка зависимостей
+echo -e "${GREEN}[4/4] Установка зависимостей...${NC}"
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+else
+    echo -e "${RED}❌ requirements.txt не найден!${NC}"
+    exit 1
+fi
 
-# 5. Успешное завершение
-echo -e "${CYAN}=========================================${NC}"
-echo -e "${CYAN}   💀 SYSTEM READY. DAEMON IS WAITING.   ${NC}"
-echo -e "${CYAN}=========================================${NC}"
-echo ""
-echo -e "Чтобы запустить сервер, введи:"
-echo -e "${GREEN}./run.sh${NC}"
+# Создание структуры (если нужна)
+mkdir -p backend frontend/templates frontend/static
+
+echo -e "\n${CYAN}=========================================${NC}"
+echo -e "${CYAN}   ✅ SETUP COMPLETE                   ${NC}"
+echo -e "${CYAN}=========================================${NC}\n"
+echo -e "Запусти сервер командой:"
+echo -e "${GREEN}./run.sh${NC}\n"

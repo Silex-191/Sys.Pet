@@ -1,48 +1,33 @@
 #!/bin/bash
 
-# Цвета для вывода
+# Цвета
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+RED='\033[0;31m'
+NC='\033[0m'
 
-# Проверка наличия venv
+# Проверка venv
 if [ ! -d "venv" ]; then
-    echo -e "${YELLOW}⚠️  Виртуальное окружение не найдено!${NC}"
-    echo -e "Запусти ${GREEN}./setup.sh${NC} для инициализации проекта"
+    echo -e "${RED}❌ venv не найдено!${NC}"
+    echo -e "Запусти сначала: ${GREEN}./setup.sh${NC}"
     exit 1
 fi
 
-# Активируем виртуальное окружение
-echo -e "${CYAN}[*] Активирую виртуальное окружение...${NC}"
+# Активация
 source venv/bin/activate
 
-# Запускаем FastAPI сервер через uvicorn в фоне
-echo -e "${GREEN}🚀 Запускаю SysPet на http://localhost:8000${NC}"
-echo -e "${YELLOW}[*] Нажми Ctrl+C чтобы остановить сервер${NC}"
-echo ""
+# Информация
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${CYAN}   🎮 SysPet Server Starting 🎮        ${NC}"
+echo -e "${CYAN}=========================================${NC}\n"
 
-# Запускаем uvicorn в фоновом режиме
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload &
-SERVER_PID=$!
+echo -e "${GREEN}✅ Virtual environment activated${NC}"
+echo -e "${GREEN}✅ Backend: backend/main.py${NC}"
+echo -e "${GREEN}✅ Frontend: frontend/templates/index.html${NC}"
+echo -e "\n${YELLOW}🚀 Starting uvicorn on http://localhost:8000${NC}"
+echo -e "${YELLOW}📝 API docs: http://localhost:8000/docs${NC}"
+echo -e "${YELLOW}⛔ Stop: Ctrl+C\n${NC}"
 
-# Даем серверу время на запуск (2 секунды)
-sleep 2
-
-# Автоматически открываем браузер
-if command -v xdg-open &> /dev/null; then
-    # Linux
-    xdg-open http://localhost:8000
-elif command -v open &> /dev/null; then
-    # macOS
-    open http://localhost:8000
-elif command -v start &> /dev/null; then
-    # Windows
-    start http://localhost:8000
-else
-    echo -e "${YELLOW}⚠️  Не удалось автоматически открыть браузер${NC}"
-    echo -e "Открой вручную: ${GREEN}http://localhost:8000${NC}"
-fi
-
-# Ждем, пока пользователь нажмет Ctrl+C
-wait $SERVER_PID
+# Запуск сервера
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
