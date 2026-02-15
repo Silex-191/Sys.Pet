@@ -5,7 +5,7 @@ API для управления питомцем и игровой логико�
 
 import asyncio
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -121,10 +121,10 @@ async def get_pet_state():
 
 
 @app.post("/api/feed")
-async def feed_pet(code: str):
+async def feed_pet(code: str = Form(...)):
     """
     Покормить питомца кодом.
-    Query param: code (строка с кодом)
+    Form param: code (строка с кодом)
     """
     if not code or len(code) == 0:
         raise HTTPException(status_code=400, detail="Code cannot be empty")
@@ -144,10 +144,10 @@ async def pet_rest():
 
 
 @app.post("/api/pet-action")
-async def pet_action(action: str):
+async def pet_action(action: str = Form(...)):
     """
     Действие над питомцем.
-    Query param: action ('pet', 'rest', 'reset')
+    Form param: action ('pet', 'rest', 'reset')
     """
     if action == "pet":
         pet.pet()
