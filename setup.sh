@@ -1,76 +1,59 @@
 #!/bin/bash
 
-# Цвета
+set -e
+
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Получение абсолютного пути к директории скрипта
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$DIR"
 
 echo -e "${CYAN}=========================================${NC}"
 echo -e "${CYAN}   👾 SYSPET: SETUP PROTOCOL 👾        ${NC}"
 echo -e "${CYAN}=========================================${NC}\n"
 
-# Переход в директорию скрипта для правильного разрешения путей
-cd "$SCRIPT_DIR"
-
-# Установка системных зависимостей
-echo -e "${GREEN}[1/8] Проверка системных зависимостей...${NC}"
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python3 не найден! Устанавливаю...${NC}"
+# 1. Python
+echo -e "${GREEN}[1/5] Проверка Python...${NC}"
+if ! command -v python3 &>/dev/null; then
+    echo -e "${RED}Python3 не найден, устанавливаю...${NC}"
     sudo apt update && sudo apt install -y python3 python3-pip python3-venv
 fi
-echo -e "${GREEN}✅ Python3 найден: $(python3 --version)${NC}"
+echo -e "${GREEN}✅ $(python3 --version)${NC}"
 
-# Установка stress-ng для стресс-тестов CPU
-if ! command -v stress-ng &> /dev/null; then
-    echo -e "${GREEN}Устанавливаю stress-ng для стресс-тестов CPU...${NC}"
+# 2. stress-ng
+echo -e "${GREEN}[2/5] Проверка stress-ng...${NC}"
+if ! command -v stress-ng &>/dev/null; then
     sudo apt install -y stress-ng
 fi
-echo -e "${GREEN}✅ stress-ng установлен${NC}\n"
+echo -e "${GREEN}✅ stress-ng OK${NC}"
 
-# Создание venv
-echo -e "${GREEN}[2/8] Создание виртуального окружения...${NC}"
-python3 -m venv venv
+# 3. Venv
+echo -e "${GREEN}[3/5] Создание venv...${NC}"
+rm -rf "$DIR/venv"
+python3 -m venv "$DIR/venv" --clear
+# Гарантируем наличие pip в venv
+"$DIR/venv/bin/python3" -m ensurepip --upgrade 2>/dev/null || true
+"$DIR/venv/bin/python3" -m pip install --upgrade pip setuptools wheel
 
-# Активация
-echo -e "${GREEN}[3/8] Активация окружения...${NC}"
-source venv/bin/activate
+# 4. Зависимости
+echo -e "${GREEN}[4/5] Установка зависимостей...${NC}"
+"$DIR/venv/bin/python3" -m pip install -r "$DIR/requirements.txt"
 
-# Обновление pip
-echo -e "${GREEN}[4/8] Обновление pip...${NC}"
-"$SCRIPT_DIR/venv/bin/pip" install --upgrade pip setuptools wheel > /dev/null 2>&1
-
-# Установка зависимостей
-echo -e "${GREEN}[5/8] Установка зависимостей...${NC}"
-if [ -f "requirements.txt" ]; then
-    "$SCRIPT_DIR/venv/bin/pip" install -r requirements.txt
-else
-    echo -e "${RED}❌ requirements.txt не найден!${NC}"
-    exit 1
+# Проверка uvicorn
+if ! "$DIR/venv/bin/python3" -c "import uvicorn" 2>/dev/null; then
+    echo -e "${RED}❌ uvicorn не установился, пробую отдельно...${NC}"
+    "$DIR/venv/bin/python3" -m pip install uvicorn
 fi
+echo -e "${GREEN}✅ uvicorn OK${NC}"
 
-# Явная установка uvicorn
-echo -e "${GREEN}[6/8] Установка uvicorn...${NC}"
-"$SCRIPT_DIR/venv/bin/pip" install uvicorn
-
-# Проверка установки uvicorn
-echo -e "${GREEN}[7/8] Проверка установки uvicorn...${NC}"
-if ! "$SCRIPT_DIR/venv/bin/python" -c "import uvicorn" 2>/dev/null; then
-    echo -e "${RED}❌ Ошибка: uvicorn не установлен корректно!${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ uvicorn установлен корректно${NC}\n"
-
-# Создание структуры и настройка прав доступа
-echo -e "${GREEN}[8/8] Создание структуры папок и настройка прав...${NC}"
+# 5. Структура
+echo -e "${GREEN}[5/5] Структура папок...${NC}"
 mkdir -p backend frontend/templates frontend/static frontend/static/emotions
 chmod +x run.sh
 
 echo -e "\n${CYAN}=========================================${NC}"
 echo -e "${CYAN}   ✅ SETUP COMPLETE                   ${NC}"
-echo -e "${CYAN}=========================================${NC}\n"
-echo -e "Запусти сервер командой:"
-echo -e "${GREEN}./run.sh${NC}\n"
+echo -e "${CYAN}=========================================${NC}"
+echo -e "\nЗапусти сервер: ${GREEN}./run.sh${NC}\n"
