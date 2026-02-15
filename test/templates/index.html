@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sys.Pet Tamagotchi</title>
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --bg-color: #f0f0f0;
+            --line-color: #222;
+            --grid-line: #aaccff;
+            --accent: #444;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #fff;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 20px 20px;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main-container {
+            width: 900px;
+            height: 600px;
+            border: 3px solid var(--line-color);
+            background: white;
+            display: grid;
+            grid-template-columns: 35% 65%;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+        }
+
+        /* --- LEFT PANEL --- */
+        .left-panel {
+            border-right: 3px solid var(--line-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            align-items: center;
+        }
+
+        .avatar-container {
+            width: 200px;
+            height: 200px;
+            border: 2px dashed var(--line-color);
+            border-radius: 50%;
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-container:hover { background-color: #eee; }
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        .stats-container { width: 100%; }
+        .stat-row { margin-bottom: 15px; }
+        .stat-label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            border: 2px solid var(--line-color);
+            background: #fff;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--line-color);
+            width: 50%;
+            transition: width 0.5s;
+        }
+
+        /* --- RIGHT PANEL --- */
+        .right-panel {
+            display: grid;
+            grid-template-rows: 80px 1fr;
+        }
+
+        .game-selector {
+            border-bottom: 3px solid var(--line-color);
+            display: flex;
+        }
+
+        .game-tab {
+            flex: 1;
+            border-right: 2px solid var(--line-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: #eee;
+        }
+
+        .game-tab.active { background: #fff; }
+        .game-tab:last-child { border-right: none; }
+
+        .game-display {
+            padding: 30px;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-view { display: none; height: 100%; flex-direction: column; width: 100%; }
+        .game-view.active { display: flex; }
+
+        /* --- MINIGAME 1: SLOTS --- */
+        .slot-machine {
+            border: 4px solid var(--line-color);
+            height: 120px; /* Made taller */
+            width: 100%;   /* Made wider */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem; /* Bigger font */
+            margin-bottom: 20px;
+            background: #222;
+            color: #0f0;
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        .status-msg {
+            font-size: 1rem;
+            color: #555;
+            margin-top: 10px;
+            text-align: center;
+            height: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            font-family: inherit;
+            border: 2px solid var(--line-color);
+            background: white;
+            cursor: pointer;
+            box-shadow: 4px 4px 0 #000;
+        }
+        
+        button:active { box-shadow: 2px 2px 0 #000; transform: translate(2px, 2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- MINIGAME 2: FEEDER --- */
+        textarea {
+            width: 95%;
+            height: 200px;
+            border: 2px solid var(--line-color);
+            font-family: monospace;
+            padding: 10px;
+            resize: none;
+            margin-bottom: 10px;
+        }
+
+        .status-log {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <input type="file" id="avatarInput" style="display: none;" accept="image/*">
+            
+            <div class="avatar-container" onclick="document.getElementById('avatarInput').click()">
+                <img id="petAvatar" src="/static/avatar.png" onerror="this.src='https://placehold.co/200x200?text=Click+Me'" alt="Pet">
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-row">
+                    <span class="stat-label">SANITY</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-sanity" style="width: 100%;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">HAPPINESS</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-happiness" style="width: 80%;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">HUNGER</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-hunger" style="width: 20%; background: red;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">EXP: <span id="val-xp">0</span> (Course <span id="val-course">1</span>)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="game-selector">
+                <div class="game-tab active" onclick="switchGame('slots')">PID SLOTS</div>
+                <div class="game-tab" onclick="switchGame('feeder')">CODE FEEDER</div>
+            </div>
+
+            <div class="game-display">
+                
+                <div id="game-slots" class="game-view active">
+                    <h3>PROCESS ROULETTE</h3>
+                    <p>Spin to find a process. It will be killed automatically.</p>
+                    
+                    <div class="slot-machine" id="slot-display">
+                        READY TO KILL
+                    </div>
+                    <div class="status-msg" id="kill-status"></div>
+                    
+                    <div class="slot-controls" style="text-align: center; margin-top: 20px;">
+                        <button id="btn-spin" onclick="spinSlots()">SPIN & KILL</button>
+                    </div>
+                </div>
+
+                <div id="game-feeder" class="game-view">
+                    <h3>CODE FEEDER</h3>
+                    <p>Feed the pet code. It loves Parity (x % 2 == 0).</p>
+                    <textarea id="code-input" placeholder="Paste your code here..."></textarea>
+                    <div class="feed-controls">
+                        <button onclick="feedCode()">FEED</button>
+                    </div>
+                </div>
+
+                <div class="status-log" id="status-log">System: Ready...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentProcess = null;
+
+        // 1. Initial Load & Polling
+        async function updateStats() {
+            try {
+                const res = await fetch('/api/state');
+                const data = await res.json();
+                
+                document.getElementById('bar-sanity').style.width = data.sanity + '%';
+                document.getElementById('bar-happiness').style.width = data.happiness + '%';
+                document.getElementById('bar-hunger').style.width = data.hunger + '%';
+                document.getElementById('val-xp').innerText = data.xp;
+                document.getElementById('val-course').innerText = data.course;
+                
+                if(data.last_action) {
+                    document.getElementById('status-log').innerText = "> " + data.last_action;
+                }
+            } catch (e) { console.error("Backend offline?"); }
+        }
+
+        setInterval(updateStats, 2000); 
+
+        // 2. Avatar Upload
+        document.getElementById('avatarInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/api/upload_avatar', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.status === 'success') {
+                document.getElementById('petAvatar').src = data.url + '?t=' + new Date().getTime();
+            }
+        });
+
+        // 3. Tab Switching
+        function switchGame(gameId) {
+            document.querySelectorAll('.game-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('game-' + gameId).classList.add('active');
+            if(gameId === 'slots') document.querySelector('.game-tab:nth-child(1)').classList.add('active');
+            else document.querySelector('.game-tab:nth-child(2)').classList.add('active');
+        }
+
+        // 4. Game: Slots (Modified for auto-kill)
+        async function spinSlots() {
+            const display = document.getElementById('slot-display');
+            const spinBtn = document.getElementById('btn-spin');
+            const statusMsg = document.getElementById('kill-status');
+            
+            spinBtn.disabled = true;
+            statusMsg.innerText = "Spinning...";
+            display.style.color = "#0f0";
+
+            // Fetch processes
+            const res = await fetch('/api/processes');
+            const procs = await res.json();
+            
+            if (procs.length === 0) {
+                 display.innerText = "ERROR: No Processes Found";
+                 spinBtn.disabled = false;
+                 return;
+            }
+
+            let i = 0;
+            let speed = 50;
+            
+            // Animation loop
+            const interval = setInterval(() => {
+                const p = procs[Math.floor(Math.random() * procs.length)];
+                // Displaying Process Name clearly
+                display.innerText = `${p.name} (${p.pid})`;
+                i++;
+                if (i > 25) {
+                    clearInterval(interval);
+                    currentProcess = p;
+                    display.style.color = 'orange'; // Warning color
+                    statusMsg.innerText = "LOCKED ON. TERMINATING IN 1s...";
+                    
+                    // AUTO KILL AFTER 1 SECOND
+                    setTimeout(() => {
+                        killProcess();
+                    }, 1000);
+                }
+            }, speed);
+        }
+
+        async function killProcess() {
+            if(!currentProcess) return;
+            const display = document.getElementById('slot-display');
+            const statusMsg = document.getElementById('kill-status');
+            
+            display.style.color = 'red';
+            display.innerText = "KILLING...";
+
+            const res = await fetch('/api/kill_process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pid: currentProcess.pid, name: currentProcess.name})
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                display.innerText = "TERMINATED";
+                statusMsg.innerText = "Target destroyed. Sanity Restored.";
+            } else {
+                display.innerText = "ACCESS DENIED";
+                statusMsg.innerText = "System refused kill command.";
+            }
+            
+            document.getElementById('btn-spin').disabled = false;
+            updateStats();
+        }
+
+        // 5. Game: Feeder
+        async function feedCode() {
+            const code = document.getElementById('code-input').value;
+            const res = await fetch('/api/feed', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code: code})
+            });
+            updateStats();
+            document.getElementById('code-input').value = "";
+        }
+
+        updateStats(); 
+    </script>
+</body>
+</html>
