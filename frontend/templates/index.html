@@ -1,656 +1,381 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sys.pet // TERMINAL</title>
+    <title>Sys.Pet Tamagotchi</title>
     <style>
-        /* --- CSS: Cyberpunk Theme --- */
+        /* --- CSS STYLES --- */
         :root {
-            --bg-color: #050505;
-            --panel-bg: #111;
-            --neon-green: #0f0;
-            --neon-pink: #f0f;
-            --neon-blue: #0ff;
-            --text-color: #eee;
-            --scanline: rgba(0, 255, 0, 0.05);
-        }
-
-        * {
-            box-sizing: border-box;
+            --bg-color: #f0f0f0;
+            --line-color: #222;
+            --grid-line: #aaccff;
+            --accent: #444;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
             font-family: 'Courier New', Courier, monospace;
+            background-color: #fff;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 20px 20px;
             margin: 0;
-            padding: 10px;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
         }
 
-        /* CRT Effect Overlay */
-        body::before {
-            content: " ";
-            display: block;
-            position: fixed;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-        }
-
-        .dashboard {
+        .main-container {
+            width: 900px;
+            height: 600px;
+            border: 3px solid var(--line-color);
+            background: white;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto 1fr auto;
-            gap: 15px;
-            width: 100%;
-            max-width: 900px;
-            padding: 20px;
-            border: 2px solid var(--neon-green);
-            box-shadow: 0 0 20px var(--neon-green);
-            background: var(--panel-bg);
-            position: relative;
-            z-index: 1;
+            grid-template-columns: 35% 65%;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
         }
 
-        /* Header */
-        header {
-            grid-column: 1 / -1;
-            text-align: center;
-            border-bottom: 1px dashed var(--neon-green);
-            padding-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
-
-        header h1 {
-            margin: 0 0 5px 0;
-            font-size: 1.5em;
-            color: var(--neon-green);
-            text-shadow: 0 0 10px var(--neon-green);
-        }
-
-        .status-badge {
-            font-size: 0.8em;
-            background: var(--neon-green);
-            color: black;
-            padding: 3px 8px;
-            font-weight: bold;
-            border-radius: 3px;
-            display: inline-block;
-        }
-
-        .status-badge.dead {
-            background: #f00;
-            color: white;
-        }
-
-        .status-badge.evolving {
-            background: var(--neon-pink);
-            color: white;
-            animation: pulse 0.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        /* Pet Container */
-        .pet-container {
-            grid-column: 1 / -1;
+        /* --- LEFT PANEL --- */
+        .left-panel {
+            border-right: 3px solid var(--line-color);
             display: flex;
             flex-direction: column;
+            padding: 20px;
+            align-items: center;
+        }
+
+        .avatar-container {
+            width: 200px;
+            height: 200px;
+            border: 2px dashed var(--line-color);
+            border-radius: 50%;
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-container:hover { background-color: #eee; }
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        .stats-container { width: 100%; }
+        .stat-row { margin-bottom: 15px; }
+        .stat-label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            border: 2px solid var(--line-color);
+            background: #fff;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--line-color);
+            width: 50%;
+            transition: width 0.5s;
+        }
+
+        /* --- RIGHT PANEL --- */
+        .right-panel {
+            display: grid;
+            grid-template-rows: 80px 1fr;
+        }
+
+        .game-selector {
+            border-bottom: 3px solid var(--line-color);
+            display: flex;
+        }
+
+        .game-tab {
+            flex: 1;
+            border-right: 2px solid var(--line-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: #eee;
+        }
+
+        .game-tab.active { background: #fff; }
+        .game-tab:last-child { border-right: none; }
+
+        .game-display {
+            padding: 30px;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-view { display: none; height: 100%; flex-direction: column; width: 100%; }
+        .game-view.active { display: flex; }
+
+        /* --- MINIGAME 1: SLOTS --- */
+        .slot-machine {
+            border: 4px solid var(--line-color);
+            height: 120px; /* Made taller */
+            width: 100%;   /* Made wider */
+            display: flex;
             align-items: center;
             justify-content: center;
-            height: 280px;
-            border: 1px solid #333;
-            background: #0a0a0a;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .pet-sprite {
-            font-size: 120px;
-            transition: transform 0.3s ease, filter 0.3s ease;
-            cursor: pointer;
-            filter: drop-shadow(0 0 15px var(--neon-green));
-            user-select: none;
-        }
-
-        .pet-sprite:hover {
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 25px var(--neon-green));
-        }
-
-        .pet-sprite:active {
-            transform: scale(0.95);
-        }
-
-        .pet-name {
-            margin-top: 10px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: var(--neon-blue);
-            text-shadow: 0 0 10px var(--neon-blue);
-        }
-
-        .pet-status-msg {
-            font-size: 0.9em;
-            color: var(--neon-pink);
-            margin-top: 5px;
-            height: 20px;
-        }
-
-        /* Stats Grid */
-        .stats {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .stat {
-            border: 1px solid var(--neon-green);
-            padding: 10px;
-            background: #0a0a0a;
-            border-radius: 3px;
-        }
-
-        .stat-label {
-            font-size: 0.8em;
-            color: var(--neon-green);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .stat-bar {
-            width: 100%;
-            height: 20px;
+            font-size: 1.8rem; /* Bigger font */
+            margin-bottom: 20px;
             background: #222;
-            border: 1px solid #444;
-            border-radius: 2px;
+            color: #0f0;
             overflow: hidden;
-            position: relative;
+            white-space: nowrap;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
-        .stat-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
-            transition: width 0.3s ease;
-            position: relative;
-        }
-
-        .stat-fill::after {
-            content: attr(data-value);
-            position: absolute;
-            right: 5px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.8em;
-            font-weight: bold;
-            color: black;
-        }
-
-        .stat-fill.danger {
-            background: linear-gradient(90deg, #f00, #ff6600);
-        }
-
-        .stat-fill.warn {
-            background: linear-gradient(90deg, #ff6600, var(--neon-pink));
-        }
-
-        /* Code Input */
-        .code-input-section {
-            grid-column: 1 / -1;
+        .status-msg {
+            font-size: 1rem;
+            color: #555;
             margin-top: 10px;
+            text-align: center;
+            height: 20px;
         }
-
-        .code-input-section label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-            color: var(--neon-green);
-            text-transform: uppercase;
-        }
-
-        .input-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        .file-upload-btn {
-            padding: 8px 15px;
-            background: transparent;
-            color: var(--neon-blue);
-            border: 1px solid var(--neon-blue);
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            transition: all 0.2s ease;
-            border-radius: 3px;
-        }
-
-        .file-upload-btn:hover {
-            background: var(--neon-blue);
-            color: black;
-            box-shadow: 0 0 15px var(--neon-blue);
-        }
-
-        #file-input {
-            display: none;
-        }
-
-        .file-info {
-            font-size: 0.8em;
-            color: var(--neon-pink);
-            flex-grow: 1;
-        }
-
-        .code-input {
-            width: 100%;
-            padding: 10px;
-            background: #0a0a0a;
-            color: var(--neon-green);
-            border: 1px solid var(--neon-green);
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            resize: vertical;
-            min-height: 80px;
-            border-radius: 3px;
-        }
-
-        .code-input:focus {
-            outline: none;
-            box-shadow: 0 0 15px var(--neon-green);
-            border-color: var(--neon-blue);
-        }
-
-        .input-hint {
-            font-size: 0.75em;
-            color: #888;
-            margin-top: 5px;
-        }
-
-        /* Buttons */
-        .buttons {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
+        
         button {
-            padding: 10px 15px;
-            background: transparent;
-            color: var(--neon-green);
-            border: 1px solid var(--neon-green);
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            font-family: inherit;
+            border: 2px solid var(--line-color);
+            background: white;
             cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            transition: all 0.2s ease;
-            border-radius: 3px;
+            box-shadow: 4px 4px 0 #000;
         }
+        
+        button:active { box-shadow: 2px 2px 0 #000; transform: translate(2px, 2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        button:hover {
-            background: var(--neon-green);
-            color: black;
-            box-shadow: 0 0 15px var(--neon-green);
-            transform: scale(1.05);
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        button.danger {
-            border-color: #f00;
-            color: #f00;
-        }
-
-        button.danger:hover {
-            background: #f00;
-            color: white;
-            box-shadow: 0 0 15px #f00;
-        }
-
-        .success-msg {
-            color: var(--neon-green);
-            background: rgba(0, 255, 0, 0.1);
+        /* --- MINIGAME 2: FEEDER --- */
+        textarea {
+            width: 95%;
+            height: 200px;
+            border: 2px solid var(--line-color);
+            font-family: monospace;
             padding: 10px;
-            border-radius: 3px;
-            margin-top: 10px;
-            display: none;
+            resize: none;
+            margin-bottom: 10px;
         }
 
-        .error-msg {
-            color: #f00;
-            background: rgba(255, 0, 0, 0.1);
-            padding: 10px;
-            border-radius: 3px;
-            margin-top: 10px;
-            display: none;
+        .status-log {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            color: #666;
         }
 
-        .loading {
-            display: inline-block;
-            width: 15px;
-            height: 15px;
-            border: 2px solid var(--neon-green);
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-                padding: 15px;
-            }
-
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .pet-sprite {
-                font-size: 80px;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <!-- HEADER -->
-        <header>
-            <h1>🎮 SYS.PET 🎮</h1>
-            <p style="margin: 5px 0; font-size: 0.9em;">
-                Тамагочи, завязанный на <span style="color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue);">системных показателях</span>
-            </p>
-            <div id="status-badge" class="status-badge">LOADING...</div>
-        </header>
 
-        <!-- PET CONTAINER -->
-        <div class="pet-container">
-            <div class="pet-sprite" id="pet-sprite" title="Клацни, чтобы погладить!">👶</div>
-            <div class="pet-name" id="pet-name">sys.pet</div>
-            <div class="pet-status-msg" id="pet-status-msg">Инициализация...</div>
-        </div>
-
-        <!-- STATS -->
-        <div class="stats" id="stats">
-            <!-- Заполняется JS -->
-        </div>
-
-        <!-- CODE INPUT -->
-        <div class="code-input-section">
-            <label for="code-input">Корми питомца кодом:</label>
-            <div class="input-controls">
-                <input type="file" id="file-input" accept=".py,.c,.cpp,.h,.hpp,.txt,.md" />
-                <button class="file-upload-btn" id="upload-btn">📎 Загрузить файл</button>
-                <span class="file-info" id="file-info"></span>
+    <div class="main-container">
+        <div class="left-panel">
+            <input type="file" id="avatarInput" style="display: none;" accept="image/*">
+            
+            <div class="avatar-container" onclick="document.getElementById('avatarInput').click()">
+                <img id="petAvatar" src="/static/avatar.png" onerror="this.src='https://placehold.co/200x200?text=Click+Me'" alt="Pet">
             </div>
-            <textarea id="code-input" class="code-input" placeholder="Вставь код здесь... Питомец любит правильные проверки на четность!"></textarea>
-            <div class="input-hint">💡 Enter - отправить, Shift+Enter - новая строка</div>
+
+            <div class="stats-container">
+                <div class="stat-row">
+                    <span class="stat-label">SANITY</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-sanity" style="width: 100%;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">HAPPINESS</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-happiness" style="width: 80%;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">HUNGER</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-hunger" style="width: 20%; background: red;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">EXP: <span id="val-xp">0</span> (Course <span id="val-course">1</span>)</span>
+                </div>
+            </div>
         </div>
 
-        <!-- BUTTONS -->
-        <div class="buttons">
-            <button id="feed-btn">🍽️ Покормить</button>
-            <button id="rest-btn">😴 Отдохнуть</button>
-            <button id="reset-btn" class="danger">⚡ Перезагрузить</button>
-        </div>
+        <div class="right-panel">
+            <div class="game-selector">
+                <div class="game-tab active" onclick="switchGame('slots')">PID SLOTS</div>
+                <div class="game-tab" onclick="switchGame('feeder')">CODE FEEDER</div>
+            </div>
 
-        <!-- MESSAGES -->
-        <div id="success-msg" class="success-msg"></div>
-        <div id="error-msg" class="error-msg"></div>
+            <div class="game-display">
+                
+                <div id="game-slots" class="game-view active">
+                    <h3>PROCESS ROULETTE</h3>
+                    <p>Spin to find a process. It will be killed automatically.</p>
+                    
+                    <div class="slot-machine" id="slot-display">
+                        READY TO KILL
+                    </div>
+                    <div class="status-msg" id="kill-status"></div>
+                    
+                    <div class="slot-controls" style="text-align: center; margin-top: 20px;">
+                        <button id="btn-spin" onclick="spinSlots()">SPIN & KILL</button>
+                    </div>
+                </div>
+
+                <div id="game-feeder" class="game-view">
+                    <h3>CODE FEEDER</h3>
+                    <p>Feed the pet code. It loves Parity (x % 2 == 0).</p>
+                    <textarea id="code-input" placeholder="Paste your code here..."></textarea>
+                    <div class="feed-controls">
+                        <button onclick="feedCode()">FEED</button>
+                    </div>
+                </div>
+
+                <div class="status-log" id="status-log">System: Ready...</div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // ===== API HELPER =====
-        class SysPetAPI {
-            constructor(baseUrl = 'http://localhost:8000') {
-                this.baseUrl = baseUrl;
-            }
+        let currentProcess = null;
 
-            async getPetState() {
-                return this.get('/api/pet');
-            }
-
-            async feedPet(code) {
-                const params = new URLSearchParams({ code });
-                return this.post('/api/feed', params);
-            }
-
-            async petAction(action) {
-                const params = new URLSearchParams({ action });
-                return this.post('/api/pet-action', params);
-            }
-
-            async get(endpoint) {
-                const response = await fetch(this.baseUrl + endpoint);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            }
-
-            async post(endpoint, data) {
-                const response = await fetch(this.baseUrl + endpoint, {
-                    method: 'POST',
-                    body: data,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            }
-        }
-
-        // ===== UI HELPER =====
-        const api = new SysPetAPI();
-        let petState = null;
-
-        // Элементы DOM
-        const petSprite = document.getElementById('pet-sprite');
-        const petName = document.getElementById('pet-name');
-        const petStatusMsg = document.getElementById('pet-status-msg');
-        const statusBadge = document.getElementById('status-badge');
-        const statsContainer = document.getElementById('stats');
-        const codeInput = document.getElementById('code-input');
-        const feedBtn = document.getElementById('feed-btn');
-        const restBtn = document.getElementById('rest-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const successMsg = document.getElementById('success-msg');
-        const errorMsg = document.getElementById('error-msg');
-        const fileInput = document.getElementById('file-input');
-        const uploadBtn = document.getElementById('upload-btn');
-        const fileInfo = document.getElementById('file-info');
-
-        // ===== RENDER FUNCTIONS =====
-        function renderStats() {
-            if (!petState) return;
-
-            statsContainer.innerHTML = '';
-
-            const stats = [
-                { label: 'HP', value: petState.hp, max: 100 },
-                { label: 'ГОЛОД', value: 100 - petState.hunger, max: 100 },
-                { label: 'УСТАЛОСТЬ', value: petState.fatigue, max: 100 },
-                { label: 'СЧАСТЬЕ', value: petState.happiness, max: 100 },
-                { label: 'ВЕС (RAM)', value: petState.weight, max: 100 },
-                { label: 'УРОВЕНЬ', value: petState.course, max: 10 },
-            ];
-
-            stats.forEach(stat => {
-                const percent = Math.min(100, (stat.value / stat.max) * 100);
-                const isDanger = stat.label === 'HP' && percent < 30;
-                const isWarn = percent > 80 && stat.label !== 'HP';
-
-                const statDiv = document.createElement('div');
-                statDiv.className = 'stat';
-                statDiv.innerHTML = `
-                    <div class="stat-label">${stat.label}</div>
-                    <div class="stat-bar">
-                        <div class="stat-fill ${isDanger ? 'danger' : isWarn ? 'warn' : ''}"
-                             style="width: ${percent}%"
-                             data-value="${Math.round(stat.value)}/${stat.max}"></div>
-                    </div>
-                `;
-                statsContainer.appendChild(statDiv);
-            });
-        }
-
-        function renderPet() {
-            if (!petState) return;
-
-            petName.textContent = petState.name;
-            petStatusMsg.textContent = petState.status_message;
-            petSprite.textContent = petState.skin;
-
-            statusBadge.textContent = petState.status.toUpperCase();
-            statusBadge.className = 'status-badge ' + petState.status;
-
-            renderStats();
-        }
-
-        function showMessage(text, isError = false) {
-            const el = isError ? errorMsg : successMsg;
-            el.textContent = text;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
-        }
-
-        // ===== UPDATE LOOP =====
-        async function updatePet() {
+        // 1. Initial Load & Polling
+        async function updateStats() {
             try {
-                petState = await api.getPetState();
-                renderPet();
-            } catch (err) {
-                console.error('Update error:', err);
-            }
+                const res = await fetch('/api/state');
+                const data = await res.json();
+                
+                document.getElementById('bar-sanity').style.width = data.sanity + '%';
+                document.getElementById('bar-happiness').style.width = data.happiness + '%';
+                document.getElementById('bar-hunger').style.width = data.hunger + '%';
+                document.getElementById('val-xp').innerText = data.xp;
+                document.getElementById('val-course').innerText = data.course;
+                
+                if(data.last_action) {
+                    document.getElementById('status-log').innerText = "> " + data.last_action;
+                }
+            } catch (e) { console.error("Backend offline?"); }
         }
 
-        setInterval(updatePet, 500);  // Обновлять каждые 500ms
+        setInterval(updateStats, 2000); 
 
-        // ===== FILE UPLOAD HANDLING =====
-        uploadBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', async (e) => {
+        // 2. Avatar Upload
+        document.getElementById('avatarInput').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            const validExtensions = ['.py', '.c', '.cpp', '.h', '.hpp', '.txt', '.md'];
-            const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/api/upload_avatar', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.status === 'success') {
+                document.getElementById('petAvatar').src = data.url + '?t=' + new Date().getTime();
+            }
+        });
+
+        // 3. Tab Switching
+        function switchGame(gameId) {
+            document.querySelectorAll('.game-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active'));
             
-            if (!validExtensions.includes(fileExt)) {
-                showMessage('Неподдерживаемый формат файла!', true);
-                return;
+            document.getElementById('game-' + gameId).classList.add('active');
+            if(gameId === 'slots') document.querySelector('.game-tab:nth-child(1)').classList.add('active');
+            else document.querySelector('.game-tab:nth-child(2)').classList.add('active');
+        }
+
+        // 4. Game: Slots (Modified for auto-kill)
+        async function spinSlots() {
+            const display = document.getElementById('slot-display');
+            const spinBtn = document.getElementById('btn-spin');
+            const statusMsg = document.getElementById('kill-status');
+            
+            spinBtn.disabled = true;
+            statusMsg.innerText = "Spinning...";
+            display.style.color = "#0f0";
+
+            // Fetch processes
+            const res = await fetch('/api/processes');
+            const procs = await res.json();
+            
+            if (procs.length === 0) {
+                 display.innerText = "ERROR: No Processes Found";
+                 spinBtn.disabled = false;
+                 return;
             }
 
-            try {
-                const text = await file.text();
-                codeInput.value = text;
-                fileInfo.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                showMessage(`Файл "${file.name}" загружен!`);
-            } catch (err) {
-                showMessage('Ошибка чтения файла: ' + err.message, true);
-            }
-        });
-
-        // ===== EVENT LISTENERS =====
-        feedBtn.addEventListener('click', async () => {
-            const code = codeInput.value.trim();
-            if (!code) {
-                showMessage('Введи код!', true);
-                return;
-            }
-
-            feedBtn.disabled = true;
-            feedBtn.innerHTML = '<span class="loading"></span>';
-
-            try {
-                const result = await api.feedPet(code);
-                if (result.success) {
-                    showMessage(result.message);
-                    codeInput.value = '';
-                } else {
-                    showMessage(result.message, true);
+            let i = 0;
+            let speed = 50;
+            
+            // Animation loop
+            const interval = setInterval(() => {
+                const p = procs[Math.floor(Math.random() * procs.length)];
+                // Displaying Process Name clearly
+                display.innerText = `${p.name} (${p.pid})`;
+                i++;
+                if (i > 25) {
+                    clearInterval(interval);
+                    currentProcess = p;
+                    display.style.color = 'orange'; // Warning color
+                    statusMsg.innerText = "LOCKED ON. TERMINATING IN 1s...";
+                    
+                    // AUTO KILL AFTER 1 SECOND
+                    setTimeout(() => {
+                        killProcess();
+                    }, 1000);
                 }
-                await updatePet();
-            } catch (err) {
-                showMessage('Ошибка: ' + err.message, true);
-            } finally {
-                feedBtn.disabled = false;
-                feedBtn.innerHTML = '🍽️ Покормить';
-            }
-        });
+            }, speed);
+        }
 
-        codeInput.addEventListener('keydown', (e) => {
-            // Enter without Shift: submit (chat-style UX pattern)
-            // This matches the requirement: "Enter to send and Shift+Enter to insert a new line"
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                feedBtn.click();
-            }
-            // Shift+Enter: allow default (new line)
-        });
+        async function killProcess() {
+            if(!currentProcess) return;
+            const display = document.getElementById('slot-display');
+            const statusMsg = document.getElementById('kill-status');
+            
+            display.style.color = 'red';
+            display.innerText = "KILLING...";
 
-        restBtn.addEventListener('click', async () => {
-            try {
-                const result = await api.petAction('rest');
-                showMessage(result.message);
-                await updatePet();
-            } catch (err) {
-                showMessage('Ошибка: ' + err.message, true);
+            const res = await fetch('/api/kill_process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pid: currentProcess.pid, name: currentProcess.name})
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                display.innerText = "TERMINATED";
+                statusMsg.innerText = "Target destroyed. Sanity Restored.";
+            } else {
+                display.innerText = "ACCESS DENIED";
+                statusMsg.innerText = "System refused kill command.";
             }
-        });
+            
+            document.getElementById('btn-spin').disabled = false;
+            updateStats();
+        }
 
-        petSprite.addEventListener('click', async () => {
-            try {
-                const result = await api.petAction('pet');
-                showMessage('Вы погладили питомца! 💕');
-                await updatePet();
-            } catch (err) {
-                console.error(err);
-            }
-        });
+        // 5. Game: Feeder
+        async function feedCode() {
+            const code = document.getElementById('code-input').value;
+            const res = await fetch('/api/feed', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code: code})
+            });
+            updateStats();
+            document.getElementById('code-input').value = "";
+        }
 
-        resetBtn.addEventListener('click', async () => {
-            if (confirm('Точно перезагрузить питомца?')) {
-                try {
-                    const result = await api.petAction('reset');
-                    showMessage('🌀 Питомец перезагружен!');
-                    await updatePet();
-                } catch (err) {
-                    showMessage('Ошибка: ' + err.message, true);
-                }
-            }
-        });
-
-        // ===== INIT =====
-        updatePet();
+        updateStats(); 
     </script>
 </body>
 </html>
