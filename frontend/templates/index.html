@@ -608,7 +608,8 @@
         });
 
         codeInput.addEventListener('keydown', (e) => {
-            // Enter without Shift: submit
+            // Enter without Shift: submit (chat-style UX pattern)
+            // This matches the requirement: "Enter to send and Shift+Enter to insert a new line"
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 feedBtn.click();

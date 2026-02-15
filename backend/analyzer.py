@@ -4,7 +4,7 @@ Provides fast, token-based analysis for C/C++/Python parity detection
 """
 
 import re
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Any
 
 # Size threshold for fallback to simpler analysis (10KB)
 LARGE_INPUT_THRESHOLD = 10 * 1024
@@ -136,7 +136,7 @@ class ParityAnalyzer:
         # C/C++ indicators
         cpp_indicators = [
             r"#include\s*<",
-            r"\bint\s+main\s*\(",
+            r"\b(?:int|void)\s+main\s*\(",
             r"\b(?:void|int|char|float|double)\s+\w+\s*\(",
             r"#define\s+",
             r"\bstd::",
@@ -191,7 +191,7 @@ class ParityAnalyzer:
         
         return found_pattern, total_xp
     
-    def analyze(self, code: str) -> Tuple[bool, int, Dict[str, any]]:
+    def analyze(self, code: str) -> Tuple[bool, int, Dict[str, Any]]:
         """
         Main analysis entry point with automatic fallback
         Returns: (found_pattern, total_xp, metadata)
