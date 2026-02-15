@@ -7,8 +7,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Получение абсолютного пути к директории скрипта
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Проверка venv
-if [ ! -d "venv" ]; then
+if [ ! -d "$SCRIPT_DIR/venv" ]; then
     echo -e "${RED}❌ venv не найдено!${NC}"
     echo -e "Запусти сначала: ${GREEN}./setup.sh${NC}"
     exit 1
@@ -27,5 +30,8 @@ echo -e "${YELLOW}📝 API docs: http://localhost:8000/docs${NC}"
 echo -e "${YELLOW}⚠️  Running with sudo for process management${NC}"
 echo -e "${YELLOW}⛔ Stop: Ctrl+C\n${NC}"
 
+# Переход в директорию скрипта для правильного разрешения путей модулей
+cd "$SCRIPT_DIR"
+
 # Запуск сервера с sudo для возможности убивать любые процессы
-sudo venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+sudo "$SCRIPT_DIR/venv/bin/python" -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
