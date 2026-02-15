@@ -5,6 +5,8 @@ API для управления питомцем и игровой логико�
 
 import asyncio
 import os
+import signal
+import subprocess
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Form, Body, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
@@ -109,7 +111,7 @@ async def health_check():
     """Проверка здоровья сервера"""
     return {
         "status": "ok",
-        "pet_alive": pet.hp > 0,
+        "pet_alive": pet.sanity > 0,
     }
 
 
@@ -117,14 +119,17 @@ async def health_check():
 
 @app.get("/api/state")
 async def get_state():
-    """Совместимость со старым фронтом: краткое состояние питомца"""
+    """Краткое состояние питомца для фронтенда"""
     state = pet.to_dict()
     return {
-        "sanity": state["hp"],
+        "sanity": state["sanity"],
         "happiness": state["happiness"],
         "hunger": state["hunger"],
+        "fatigue": state["fatigue"],
         "xp": state["xp"],
         "course": state["course"],
+        "status": state["status"],
+        "avatar_emotion": state["status"],  # Для динамической эмоции
         "last_action": pet.status_message,
     }
 
@@ -222,25 +227,23 @@ async def upload_avatar(file: UploadFile = File(...)):
 
 @app.get("/api/processes")
 async def list_processes():
-    """Список процессов (безопасное подмножество)"""
+    """Список ВСЕХ процессов (запущено от sudo)"""
     import psutil
 
-    current_uid = psutil.Process().uids().real if hasattr(psutil.Process(), "uids") else None
     processes = []
-    for proc in psutil.process_iter(["pid", "name", "uids"]):
+    for proc in psutil.process_iter(["pid", "name"]):
         try:
-            if current_uid is not None and proc.info.get("uids") and proc.info["uids"].real != current_uid:
-                continue
             processes.append({"pid": proc.info["pid"], "name": proc.info.get("name") or "unknown"})
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return processes[:30]
+    return processes[:50]  # Увеличили лимит
 
 
 @app.post("/api/kill_process")
 async def kill_process(payload: dict = Body(...)):
-    """Попытаться завершить процесс по PID (с ограничениями безопасности)"""
+    """Убить процесс по PID с помощью SIGKILL (запущено от sudo)"""
     import psutil
+    import signal
 
     pid = payload.get("pid")
     if pid is None:
@@ -250,19 +253,24 @@ async def kill_process(payload: dict = Body(...)):
         pid_int = int(pid)
         if pid_int <= 0:
             return {"success": False, "message": "Invalid pid"}
-        proc = psutil.Process(pid_int)
-        if proc.pid == os.getpid():
+        
+        # Защита своего процесса
+        if pid_int == os.getpid():
             return {"success": False, "message": "Cannot terminate server process"}
-        proc.terminate()
-        try:
-            proc.wait(timeout=1)
-            return {"success": True, "pid": pid}
-        except psutil.TimeoutExpired:
-            return {"success": False, "message": "Timeout while terminating"}
-    except psutil.NoSuchProcess:
+        
+        # Используем SIGKILL для надёжного убийства
+        os.kill(pid_int, signal.SIGKILL)
+        
+        # Успешное убийство - добавляем +2 sanity питомцу
+        pet.process_killed()
+        
+        return {"success": True, "pid": pid, "message": "Process killed! +2 sanity"}
+    except ProcessLookupError:
         return {"success": False, "message": "Process not found"}
-    except psutil.AccessDenied:
-        return {"success": False, "message": "Access denied"}
+    except PermissionError:
+        return {"success": False, "message": "Permission denied"}
+    except Exception as e:
+        return {"success": False, "message": f"Error: {str(e)}"}
 
 
 @app.get("/api/debug/info")
@@ -274,6 +282,76 @@ async def debug_info():
         "game_task_running": game_task is not None and not game_task.done(),
         "pet": pet.to_dict(),
     }
+
+
+@app.post("/api/stress_test")
+async def stress_test():
+    """
+    Запустить стресс-тест CPU.
+    Использует stress-ng если доступен, иначе Python-based fallback.
+    """
+    import shutil
+    
+    # Проверяем наличие stress-ng
+    if shutil.which("stress-ng"):
+        try:
+            # Запускаем stress-ng в фоне на 30 секунд
+            import multiprocessing
+            cpu_count = multiprocessing.cpu_count()
+            subprocess.Popen(
+                ["stress-ng", "--cpu", str(cpu_count), "--timeout", "30s"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return {
+                "success": True,
+                "message": f"Stress test started! Loading {cpu_count} CPU cores for 30s",
+                "method": "stress-ng"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Failed to start stress-ng: {str(e)}"
+            }
+    else:
+        # Fallback: Python-based stress test
+        try:
+            # Запускаем Python процесс для нагрузки CPU
+            python_stress = """
+import time
+import multiprocessing
+
+def cpu_stress():
+    end_time = time.time() + 30
+    while time.time() < end_time:
+        x = 0
+        for i in range(1000000):
+            x += i ** 2
+
+if __name__ == '__main__':
+    processes = []
+    for _ in range(multiprocessing.cpu_count()):
+        p = multiprocessing.Process(target=cpu_stress)
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
+"""
+            subprocess.Popen(
+                ["python3", "-c", python_stress],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return {
+                "success": True,
+                "message": "Stress test started! Python fallback mode for 30s",
+                "method": "python-fallback"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Failed to start stress test: {str(e)}"
+            }
 
 
 if __name__ == "__main__":

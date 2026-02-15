@@ -15,24 +15,18 @@ from .analyzer import analyzer
 XP_TO_NEXT_COURSE = 100
 MAX_WEIGHT_RAM = 1024 * 1024 * 1024 * 4
 UPDATE_INTERVAL = 1.0  # Обновление каждую секунду
-
-# ===== ПАТТЕРНЫ КОДА =====
-PARITY_REGEXES: List[Tuple[str, int]] = [
-    (r"%\s*2\s*==\s*0", 10),  # Классика: num % 2 == 0
-    (r"&\s*1\s*==\s*0", 20),  # Битовый сдвиг: num & 1 == 0
-    (r"not\s*\(.*\s*&\s*1\)", 30),  # Pythonic: not (num & 1)
-    (r"str\(.*\)\[-1\]\s*in\s*['\"]02468['\"]", 50),  # Строковое: str(num)[-1] in '02468'
-    (r"while\s*.*\s*>\s*0:.*-=2", 100),  # Цикличное: while n > 0: n -= 2
-]
+HUNGER_DECAY_INTERVAL = 10.0  # Голод уменьшается каждые 10 секунд
+HAPPINESS_DECAY_INTERVAL = 15.0  # Счастье уменьшается каждые 15 секунд
+FATIGUE_XP_INTERVAL = 5.0  # XP от усталости каждые 5 секунд
 
 
 class PetStatus(Enum):
     """Статусы питомца"""
-    HAPPY = "happy"  # Счастлив
-    HUNGRY = "hungry"  # Голоден
-    TIRED = "tired"  # Устал
-    DEAD = "dead"  # Мертв
-    EVOLVING = "evolving"  # Эволюционирует
+    HAPPY = "happy"
+    HUNGRY = "hungry"
+    TIRED = "tired"
+    DEAD = "dead"
+    EVOLVING = "evolving"
 
 
 class SysPet:
@@ -42,32 +36,35 @@ class SysPet:
         self.name = name
 
         # === СТАТЫ (0-100) ===
-        self.hp = 100.0
-        self.hunger = 20.0  # 0 = голодный, 100 = сытый
+        self.sanity = 100.0  # Renamed from hp - рассудок
+        self.hunger = 100.0  # 100 = сытый, 0 = голодный (reversed!)
         self.fatigue = 0.0  # 0 = бодрый, 100 = очень устал
         self.happiness = 80.0  # 0 = грустный, 100 = счастлив
 
         # === ФИЗИЧЕСКИЕ ХАРАКТЕРИСТИКИ ===
-        self.weight = 50.0  # RAM-зависимо (50 - норма, >80 - жирный)
+        self.weight = 50.0  # RAM-зависимо
 
         # === ПРОГРЕСС ===
-        self.course = 1  # Уровень
-        self.xp = 0  # Опыт текущего уровня
+        self.course = 1
+        self.xp = 0
 
         # === ВИЗУАЛ ===
-        self.skin = "👶"  # Эмодзи питомца (меняется с уровнем)
+        self.skin = "👶"
         self.status_message = "Жду код..."
 
         # === ВНУТРЕННЕЕ СОСТОЯНИЕ ===
-        self._total_xp = 0  # Всего XP за игру
-        self._code_fed_count = 0  # Сколько кода съедено
+        self._total_xp = 0
+        self._code_fed_count = 0
         self._last_update = time.time()
+        self._last_hunger_decay = time.time()
+        self._last_happiness_decay = time.time()
+        self._last_fatigue_xp = time.time()
 
     def to_dict(self) -> Dict[str, Any]:
         """Преобразование в словарь для JSON"""
         return {
             "name": self.name,
-            "hp": round(self.hp, 1),
+            "sanity": round(self.sanity, 1),
             "hunger": round(self.hunger, 1),
             "fatigue": round(self.fatigue, 1),
             "happiness": round(self.happiness, 1),
@@ -84,7 +81,7 @@ class SysPet:
 
     def get_status(self) -> str:
         """Определить статус питомца"""
-        if self.hp <= 0:
+        if self.sanity <= 0:
             return PetStatus.DEAD.value
         elif self.xp >= XP_TO_NEXT_COURSE:
             return PetStatus.EVOLVING.value
@@ -97,50 +94,48 @@ class SysPet:
 
     def analyze_code(self, code: str) -> Tuple[bool, int, Dict[str, Any]]:
         """
-        Анализирует код через enhanced analyzer с поддержкой C/C++ и Python.
-        Возвращает (найден_ли_паттерн, xp_награда, метаданные)
+        Анализирует код через enhanced analyzer.
+        Возвращает (найден_ли_паттерн, количество_паттернов, метаданные)
         """
-        # Use enhanced analyzer with automatic fallback for large inputs
-        found, total_xp, metadata = analyzer.analyze(code)
-        return found, total_xp, metadata
+        found, pattern_count, metadata = analyzer.analyze(code)
+        return found, pattern_count, metadata
 
     def feed(self, code: str) -> Dict[str, Any]:
         """
         Кормит питомца кодом.
-        Возвращает информацию о результате.
+        Каждая уникальная конструкция чётности = +20 hunger
+        Код без конструкций = -10 sanity
         """
-        found, xp_gained, metadata = self.analyze_code(code)
+        found, pattern_count, metadata = self.analyze_code(code)
 
         if found:
-            # Код вкусный!
-            self.hunger = max(0, self.hunger - 30)
+            # Код содержит проверки чётности!
+            hunger_restore = pattern_count * 20  # Каждый паттерн = +20 hunger
+            self.hunger = min(100, self.hunger + hunger_restore)
             self.happiness = min(100, self.happiness + 15)
-            self.xp += xp_gained
-            self._total_xp += xp_gained
+            # XP не даётся при кормлении, только hunger восстанавливается
             self._code_fed_count += 1
-            self.status_message = "Мм, вкусненько! 😋"
-
-            # Проверка на эволюцию
-            if self.xp >= XP_TO_NEXT_COURSE:
-                self.evolve()
+            self.status_message = f"Мм, вкусненько! +{hunger_restore} hunger 😋"
 
             return {
                 "success": True,
-                "message": f"Питомец съел код! +{xp_gained} XP",
-                "xp_gained": xp_gained,
+                "message": f"Питомец съел код! +{hunger_restore} hunger ({pattern_count} паттернов)",
+                "hunger_restored": hunger_restore,
+                "patterns_found": pattern_count,
                 "analysis": metadata,
                 "pet": self.to_dict()
             }
         else:
-            # Код не вкусный
-            self.hunger = min(100, self.hunger + 5)
+            # Код БЕЗ проверок чётности - это плохо!
+            self.sanity = max(0, self.sanity - 10)
             self.happiness = max(0, self.happiness - 10)
-            self.status_message = "Фу, это не то... 😢"
+            self.status_message = "Фу, это не то... -10 sanity 😢"
 
             return {
                 "success": False,
-                "message": "Питомец не понял этот код...",
-                "xp_gained": 0,
+                "message": "Питомец не понял этот код... -10 sanity",
+                "hunger_restored": 0,
+                "patterns_found": 0,
                 "analysis": metadata,
                 "pet": self.to_dict()
             }
@@ -151,7 +146,7 @@ class SysPet:
         self.xp = 0
 
         # Улучшение статов
-        self.hp = min(100, self.hp + 10)
+        self.sanity = min(100, self.sanity + 10)
         self.happiness = min(100, self.happiness + 20)
 
         # Смена скина
@@ -183,43 +178,67 @@ class SysPet:
             ram_info = psutil.virtual_memory()
 
             # === Влияние CPU на усталость ===
-            # Высокая CPU → питомец устает
             fatigue_increase = (cpu_percent / 100.0) * 5
             self.fatigue = min(100, self.fatigue + fatigue_increase)
 
-            # === Влияние RAM ��а вес ===
-            # Больше RAM → питомец толстеет
+            # === Влияние RAM на вес ===
             self.weight = (ram_info.percent / 100.0) * 100
 
             # === Общее здоровье ===
-            # Усталость ↔ голод и счастье
             if self.fatigue > 80:
                 self.happiness = max(0, self.happiness - 1)
-                self.hunger = min(100, self.hunger + 1)
+                self.hunger = max(0, self.hunger - 1)
 
-            # Голод → HP
+            # Голод → sanity
             if self.hunger < 10:
-                self.hp = max(0, self.hp - 2)
+                self.sanity = max(0, self.sanity - 2)
 
-            # Счастье → HP (если счастлив, здоровее)
+            # Счастье → sanity
             if self.happiness > 70:
-                self.hp = min(100, self.hp + 0.5)
+                self.sanity = min(100, self.sanity + 0.5)
 
         except Exception as e:
             self.status_message = f"Ошибка системы: {str(e)[:20]}"
+
+        # === АВТОМАТИЧЕСКОЕ УМЕНЬШЕНИЕ ГОЛОДА ===
+        # Голод уменьшается на 1 каждые 10 секунд
+        if now - self._last_hunger_decay >= HUNGER_DECAY_INTERVAL:
+            self.hunger = max(0, self.hunger - 1)
+            self._last_hunger_decay = now
+
+        # === АВТОМАТИЧЕСКОЕ УМЕНЬШЕНИЕ СЧАСТЬЯ ===
+        # Счастье уменьшается на 1 каждые 15 секунд
+        if now - self._last_happiness_decay >= HAPPINESS_DECAY_INTERVAL:
+            self.happiness = max(0, self.happiness - 1)
+            self._last_happiness_decay = now
+
+        # === XP ОТ УСТАЛОСТИ ===
+        # Когда fatigue >= 100, даём +1 XP каждые 5 секунд
+        if self.fatigue >= 100:
+            if now - self._last_fatigue_xp >= FATIGUE_XP_INTERVAL:
+                self.xp += 1
+                self._total_xp += 1
+                self._last_fatigue_xp = now
+                if self.xp >= XP_TO_NEXT_COURSE:
+                    self.evolve()
 
         self._last_update = now
 
     def rest(self):
         """Питомец отдыхает"""
         self.fatigue = max(0, self.fatigue - 30)
-        self.hunger = min(100, self.hunger + 10)
+        self.hunger = max(0, self.hunger - 10)
         self.status_message = "Zzz... отдыхаю 😴"
 
     def pet(self):
         """Пожалеть питомца"""
         self.happiness = min(100, self.happiness + 5)
         self.status_message = "Мур-мур! 💕"
+
+    def process_killed(self):
+        """Вызывается при успешном убийстве процесса - восстанавливает sanity"""
+        self.sanity = min(100, self.sanity + 2)
+        self.status_message = "Процесс убит! +2 sanity 🔪"
 
     def debug_reset(self):
         """Сброс питомца (для тестирования)"""

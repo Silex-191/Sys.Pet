@@ -1,0 +1,15 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dead face - X eyes and flat mouth -->
+  <!-- X eyes -->
+  <line x1="60" y1="70" x2="80" y2="90" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  <line x1="80" y1="70" x2="60" y2="90" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  
+  <line x1="120" y1="70" x2="140" y2="90" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  <line x1="140" y1="70" x2="120" y2="90" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Wavy dead mouth -->
+  <path d="M 65 130 Q 80 125 95 130 Q 110 135 125 130 Q 135 127 140 130" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Tongue sticking out -->
+  <ellipse cx="105" cy="145" rx="8" ry="5" fill="#f99" stroke="#222" stroke-width="2"/>
+</svg>
