@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sys.pet // TERMINAL</title>
+    <style>
+        /* --- CSS: Cyberpunk Theme --- */
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #111;
+            --neon-green: #0f0;
+            --neon-pink: #f0f;
+            --neon-blue: #0ff;
+            --text-color: #eee;
+            --scanline: rgba(0, 255, 0, 0.05);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* CRT Effect Overlay */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+            background: var(--panel-bg);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            grid-column: 1 / -1;
+            text-align: center;
+            border-bottom: 1px dashed var(--neon-green);
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-badge {
+            font-size: 0.8em;
+            background: var(--neon-green);
+            color: black;
+            padding: 2px 5px;
+            font-weight: bold;
+        }
+
+        /* Main Pet Area */
+        .pet-container {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+            border: 1px solid #333;
+            background: #0a0a0a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pet-sprite {
+            font-size: 100px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            cursor: pointer;
+            filter: drop-shadow(0 0 10px var(--neon-green));
+            /* Точка трансформации снизу, чтобы он рос вширь от земли */
+            transform-origin: bottom center; 
+        }
+
+        .pet-message {
+            margin-top: 10px;
+            color: var(--neon-blue);
+            font-size: 0.9em;
+        }
+
+        /* Stats Grid */
+        .stats-panel {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            margin-bottom: 5px;
+            color: #888;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #222;
+            border: 1px solid #444;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--neon-green);
+            width: 0%;
+            transition: width 0.5s ease, background-color 0.3s;
+            box-shadow: 0 0 5px var(--neon-green);
+        }
+
+        /* Input Area */
+        .feed-area {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        textarea {
+            flex-grow: 1;
+            background: #000;
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            padding: 10px;
+            font-family: inherit;
+            resize: none;
+            height: 60px;
+        }
+
+        textarea:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        button {
+            background: var(--neon-green);
+            color: black;
+            border: none;
+            padding: 0 20px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+        }
+
+        /* Animations & Effects */
+        .shaking {
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        /* Effect when code is tasty */
+        .success-flash {
+            animation: flashSuccess 0.5s ease-out;
+        }
+        @keyframes flashSuccess {
+            0% { box-shadow: 0 0 0 var(--neon-green); }
+            50% { box-shadow: 0 0 50px var(--neon-green) inset; }
+            100% { box-shadow: 0 0 0 var(--neon-green); }
+        }
+
+        /* Helpers for styling specific bars */
+        .bar-ram .progress-fill { background: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
+        .bar-cpu .progress-fill { background: var(--neon-pink); box-shadow: 0 0 5px var(--neon-pink); }
+        
+    </style>
+</head>
+<body class="crt">
+
+    <div class="dashboard" id="mainDashboard">
+        <header>
+            <h1>SYS.PET <span id="courseBadge" class="status-badge">КУРС 1</span></h1>
+            <div style="font-size: 10px; margin-top: 5px; opacity: 0.7;">
+                HOST: LOCALHOST:8000 | STATUS: <span id="connectionStatus">CONNECTING...</span>
+            </div>
+        </header>
+
+        <div class="pet-container">
+            <div id="petSprite" class="pet-sprite">🥚</div>
+            <div id="statusMessage" class="pet-message">Инициализация...</div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-box">
+                <span class="stat-label">HEALTH (HP)</span>
+                <div class="progress-bar"><div id="hpBar" class="progress-fill" style="width: 50%;"></div></div>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">HAPPINESS</span>
+                <div class="progress-bar"><div id="happyBar" class="progress-fill" style="width: 50%;"></div></div>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">RAM LOAD (WEIGHT)</span>
+                <div class="progress-bar bar-ram"><div id="ramBar" class="progress-fill" style="width: 20%;"></div></div>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">CPU LOAD (FATIGUE)</span>
+                <div class="progress-bar bar-cpu"><div id="cpuBar" class="progress-fill" style="width: 10%;"></div></div>
+            </div>
+        </div>
+
+        <div class="feed-area">
+            <textarea id="codeArea" placeholder="Вставьте Python код с проверкой четности..."></textarea>
+            <button onclick="feedPet()">СКОРМИТЬ<br>КОД</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- JS: Logic --- */
+        const API_URL = 'http://localhost:8000/api';
+        
+        // DOM Elements
+        const elSprite = document.getElementById('petSprite');
+        const elMessage = document.getElementById('statusMessage');
+        const elCourse = document.getElementById('courseBadge');
+        const elConn = document.getElementById('connectionStatus');
+        const elDashboard = document.getElementById('mainDashboard');
+
+        // Bars
+        const barHp = document.getElementById('hpBar');
+        const barHappy = document.getElementById('happyBar');
+        const barRam = document.getElementById('ramBar');
+        const barCpu = document.getElementById('cpuBar');
+
+        // Main Loop
+        async function updateStats() {
+            try {
+                const response = await fetch(`${API_URL}/pet`);
+                if (!response.ok) throw new Error("Offline");
+                
+                const data = await response.json();
+                render(data);
+                
+                elConn.innerText = "ONLINE";
+                elConn.style.color = "var(--neon-green)";
+            } catch (e) {
+                console.error(e);
+                elConn.innerText = "OFFLINE (Backend down?)";
+                elConn.style.color = "var(--neon-pink)";
+            }
+        }
+
+        // Render Function
+        function render(data) {
+            // 1. Update Text
+            elMessage.innerText = `> ${data.status_message}`;
+            elCourse.innerText = `КУРС ${data.course}`;
+            elSprite.innerText = data.skin;
+
+            // 2. Update Bars
+            barHp.style.width = `${data.hp}%`;
+            barHappy.style.width = `${data.happiness}%`;
+            
+            // RAM = Weight Bar
+            // Если RAM > 80, делаем бар красным/розовым для предупреждения
+            barRam.style.width = `${data.weight}%`; 
+            
+            // CPU = Fatigue Bar
+            barCpu.style.width = `${data.fatigue}%`;
+
+            // 3. VISUALIZATION LOGIC
+            
+            // --- RAM (Weight) -> Scale X ---
+            // Если вес 50 (норма), scale = 1. Если вес 100, scale = 2.0 (очень широкий)
+            // Формула: 1 + (weight - 50) / 50. Минимум 0.8 (если худой).
+            let scaleX = 1;
+            if (data.weight > 50) {
+                scaleX = 1 + ((data.weight - 50) / 40); 
+            } else {
+                scaleX = 0.8 + (data.weight / 250); // Чуть уже, если голодный
+            }
+            // Ограничим максимальную ширину, чтобы не порвать экран
+            if (scaleX > 3) scaleX = 3; 
+            
+            elSprite.style.transform = `scaleX(${scaleX}) scaleY(${1/Math.sqrt(scaleX)})`; // Сохраняем объем: если шире, то ниже
+
+            // --- CPU (Fatigue) -> Jitter/Shake ---
+            if (data.fatigue > 80) {
+                elSprite.classList.add('shaking');
+                elMessage.innerText += " [CPU OVERLOAD]";
+            } else {
+                elSprite.classList.remove('shaking');
+            }
+        }
+
+        // Feeding Handler
+        async function feedPet() {
+            const code = document.getElementById('codeArea').value;
+            if (!code.trim()) return;
+
+            // Simple visual feedback immediately
+            document.querySelector('button').innerText = "SENDING...";
+
+            try {
+                const response = await fetch(`${API_URL}/feed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.is_tasty) {
+                    // Success Effect
+                    triggerSuccessEffect();
+                    elMessage.innerText = "ВКУСНО! СПАСИБО!";
+                } else {
+                    // Fail Effect
+                    elMessage.innerText = "ФУ! ЭТО НЕ ТО!";
+                    elDashboard.style.borderColor = "var(--neon-pink)";
+                    setTimeout(() => elDashboard.style.borderColor = "var(--neon-green)", 500);
+                }
+            } catch (e) {
+                alert("Ошибка отправки (Бэкенд недоступен)");
+            } finally {
+                document.querySelector('button').innerHTML = "СКОРМИТЬ<br>КОД";
+                document.getElementById('codeArea').value = "";
+            }
+        }
+
+        // Visual Effects
+        function triggerSuccessEffect() {
+            // Flash screen
+            elDashboard.classList.add('success-flash');
+            
+            // Temporary happy emoji override
+            const oldSkin = elSprite.innerText;
+            elSprite.innerText = "😋"; 
+            
+            setTimeout(() => {
+                elDashboard.classList.remove('success-flash');
+                // Скин вернется сам при следующем апдейте updateStats
+            }, 1000);
+        }
+
+        // Start Loop (Every 1s)
+        setInterval(updateStats, 1000);
+        updateStats(); // First run
+
+    </script>
+</body>
+</html>
