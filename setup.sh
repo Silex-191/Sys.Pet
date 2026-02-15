@@ -6,9 +6,15 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Получение абсолютного пути к директории скрипта
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo -e "${CYAN}=========================================${NC}"
 echo -e "${CYAN}   👾 SYSPET: SETUP PROTOCOL 👾        ${NC}"
 echo -e "${CYAN}=========================================${NC}\n"
+
+# Переход в директорию скрипта для правильного разрешения путей
+cd "$SCRIPT_DIR"
 
 # Установка системных зависимостей
 echo -e "${GREEN}[1/8] Проверка системных зависимостей...${NC}"
@@ -35,12 +41,12 @@ source venv/bin/activate
 
 # Обновление pip
 echo -e "${GREEN}[4/8] Обновление pip...${NC}"
-pip install --upgrade pip setuptools wheel > /dev/null 2>&1
+"$SCRIPT_DIR/venv/bin/pip" install --upgrade pip setuptools wheel > /dev/null 2>&1
 
 # Установка зависимостей
 echo -e "${GREEN}[5/8] Установка зависимостей...${NC}"
 if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
+    "$SCRIPT_DIR/venv/bin/pip" install -r requirements.txt
 else
     echo -e "${RED}❌ requirements.txt не найден!${NC}"
     exit 1
@@ -48,11 +54,11 @@ fi
 
 # Явная установка uvicorn
 echo -e "${GREEN}[6/8] Установка uvicorn...${NC}"
-pip install uvicorn
+"$SCRIPT_DIR/venv/bin/pip" install uvicorn
 
 # Проверка установки uvicorn
 echo -e "${GREEN}[7/8] Проверка установки uvicorn...${NC}"
-if ! venv/bin/python -c "import uvicorn" 2>/dev/null; then
+if ! "$SCRIPT_DIR/venv/bin/python" -c "import uvicorn" 2>/dev/null; then
     echo -e "${RED}❌ Ошибка: uvicorn не установлен корректно!${NC}"
     exit 1
 fi
