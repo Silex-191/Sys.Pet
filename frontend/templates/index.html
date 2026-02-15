@@ -62,6 +62,16 @@
 
         .avatar-container:hover { background-color: #eee; }
         .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Avatar emotion overlay */
+        .avatar-emotion {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
 
         .stats-container { width: 100%; }
         .stat-row { margin-bottom: 15px; }
@@ -99,7 +109,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
             background: #eee;
@@ -123,12 +133,12 @@
         /* --- MINIGAME 1: SLOTS --- */
         .slot-machine {
             border: 4px solid var(--line-color);
-            height: 120px; /* Made taller */
-            width: 100%;   /* Made wider */
+            height: 120px;
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem; /* Bigger font */
+            font-size: 1.8rem;
             margin-bottom: 20px;
             background: #222;
             color: #0f0;
@@ -170,6 +180,13 @@
             margin-bottom: 10px;
         }
 
+        /* --- STRESS TEST --- */
+        .stress-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
         .status-log {
             position: absolute;
             bottom: 10px;
@@ -188,6 +205,7 @@
             
             <div class="avatar-container" onclick="document.getElementById('avatarInput').click()">
                 <img id="petAvatar" src="/static/avatar.png" onerror="this.src='https://placehold.co/200x200?text=Click+Me'" alt="Pet">
+                <img id="petEmotion" class="avatar-emotion" src="/static/emotions/emotion_default.svg" alt="Emotion">
             </div>
 
             <div class="stats-container">
@@ -201,7 +219,11 @@
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">HUNGER</span>
-                    <div class="progress-bar"><div class="progress-fill" id="bar-hunger" style="width: 20%; background: red;"></div></div>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-hunger" style="width: 100%; background: #4a4;"></div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">FATIGUE</span>
+                    <div class="progress-bar"><div class="progress-fill" id="bar-fatigue" style="width: 0%; background: #a44;"></div></div>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">EXP: <span id="val-xp">0</span> (Course <span id="val-course">1</span>)</span>
@@ -213,6 +235,7 @@
             <div class="game-selector">
                 <div class="game-tab active" onclick="switchGame('slots')">PID SLOTS</div>
                 <div class="game-tab" onclick="switchGame('feeder')">CODE FEEDER</div>
+                <div class="game-tab" onclick="switchGame('stress')">STRESS TEST</div>
             </div>
 
             <div class="game-display">
@@ -233,11 +256,24 @@
 
                 <div id="game-feeder" class="game-view">
                     <h3>CODE FEEDER</h3>
-                    <p>Feed the pet code. It loves Parity (x % 2 == 0).</p>
+                    <p>Feed the pet code. It loves Parity checks (x % 2 == 0).</p>
                     <textarea id="code-input" placeholder="Paste your code here..."></textarea>
                     <div class="feed-controls">
                         <button onclick="feedCode()">FEED</button>
                     </div>
+                </div>
+
+                <div id="game-stress" class="game-view">
+                    <h3>CPU STRESS TEST</h3>
+                    <div class="stress-info">
+                        <p>⚠️ Warning: This will heavily load your CPU for 30 seconds!</p>
+                        <p>💡 When FATIGUE reaches 100, your pet will gain XP (+1 every 5s)</p>
+                        <p>🔥 Use this to level up your pet through exhaustion!</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 40px;">
+                        <button id="btn-stress" onclick="runStressTest()">START STRESS TEST</button>
+                    </div>
+                    <div class="status-msg" id="stress-status"></div>
                 </div>
 
                 <div class="status-log" id="status-log">System: Ready...</div>
@@ -257,8 +293,13 @@
                 document.getElementById('bar-sanity').style.width = data.sanity + '%';
                 document.getElementById('bar-happiness').style.width = data.happiness + '%';
                 document.getElementById('bar-hunger').style.width = data.hunger + '%';
+                document.getElementById('bar-fatigue').style.width = data.fatigue + '%';
                 document.getElementById('val-xp').innerText = data.xp;
                 document.getElementById('val-course').innerText = data.course;
+                
+                // Update emotion based on status
+                const emotion = data.avatar_emotion || data.status || 'default';
+                document.getElementById('petEmotion').src = `/static/emotions/emotion_${emotion}.svg`;
                 
                 if(data.last_action) {
                     document.getElementById('status-log').innerText = "> " + data.last_action;
@@ -290,7 +331,8 @@
             
             document.getElementById('game-' + gameId).classList.add('active');
             if(gameId === 'slots') document.querySelector('.game-tab:nth-child(1)').classList.add('active');
-            else document.querySelector('.game-tab:nth-child(2)').classList.add('active');
+            else if(gameId === 'feeder') document.querySelector('.game-tab:nth-child(2)').classList.add('active');
+            else if(gameId === 'stress') document.querySelector('.game-tab:nth-child(3)').classList.add('active');
         }
 
         // 4. Game: Slots (Modified for auto-kill)
@@ -319,13 +361,12 @@
             // Animation loop
             const interval = setInterval(() => {
                 const p = procs[Math.floor(Math.random() * procs.length)];
-                // Displaying Process Name clearly
                 display.innerText = `${p.name} (${p.pid})`;
                 i++;
                 if (i > 25) {
                     clearInterval(interval);
                     currentProcess = p;
-                    display.style.color = 'orange'; // Warning color
+                    display.style.color = 'orange';
                     statusMsg.innerText = "LOCKED ON. TERMINATING IN 1s...";
                     
                     // AUTO KILL AFTER 1 SECOND
@@ -353,10 +394,10 @@
             
             if(data.success) {
                 display.innerText = "TERMINATED";
-                statusMsg.innerText = "Target destroyed. Sanity Restored.";
+                statusMsg.innerText = "Target destroyed. +2 Sanity!";
             } else {
                 display.innerText = "ACCESS DENIED";
-                statusMsg.innerText = "System refused kill command.";
+                statusMsg.innerText = data.message || "System refused kill command.";
             }
             
             document.getElementById('btn-spin').disabled = false;
@@ -373,6 +414,34 @@
             });
             updateStats();
             document.getElementById('code-input').value = "";
+        }
+
+        // 6. Game: Stress Test
+        async function runStressTest() {
+            const btn = document.getElementById('btn-stress');
+            const statusMsg = document.getElementById('stress-status');
+            
+            btn.disabled = true;
+            statusMsg.innerText = "Starting stress test...";
+            
+            try {
+                const res = await fetch('/api/stress_test', { method: 'POST' });
+                const data = await res.json();
+                
+                if(data.success) {
+                    statusMsg.innerText = data.message;
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        statusMsg.innerText = "";
+                    }, 30000); // Re-enable after 30s
+                } else {
+                    statusMsg.innerText = "Failed: " + data.message;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                statusMsg.innerText = "Error: " + e.message;
+                btn.disabled = false;
+            }
         }
 
         updateStats(); 

@@ -1,0 +1,18 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tired face - sleepy eyes -->
+  <!-- Half-closed eyes (horizontal lines) -->
+  <line x1="55" y1="80" x2="85" y2="80" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  <line x1="115" y1="80" x2="145" y2="80" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Bags under eyes -->
+  <path d="M 55 88 Q 70 93 85 88" fill="none" stroke="#888" stroke-width="2"/>
+  <path d="M 115 88 Q 130 93 145 88" fill="none" stroke="#888" stroke-width="2"/>
+  
+  <!-- Tired mouth -->
+  <line x1="80" y1="130" x2="120" y2="130" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Zzz symbols -->
+  <text x="145" y="50" font-family="monospace" font-size="18" fill="#222">Z</text>
+  <text x="155" y="40" font-family="monospace" font-size="14" fill="#666">z</text>
+  <text x="163" y="33" font-family="monospace" font-size="10" fill="#999">z</text>
+</svg>

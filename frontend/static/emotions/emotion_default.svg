@@ -1,0 +1,11 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Default neutral face -->
+  <!-- Eyes -->
+  <circle cx="70" cy="80" r="6" fill="none" stroke="#222" stroke-width="2"/>
+  <circle cx="130" cy="80" r="6" fill="none" stroke="#222" stroke-width="2"/>
+  <circle cx="70" cy="80" r="3" fill="#222"/>
+  <circle cx="130" cy="80" r="3" fill="#222"/>
+  
+  <!-- Neutral mouth -->
+  <line x1="75" y1="130" x2="125" y2="130" stroke="#222" stroke-width="2" stroke-linecap="round"/>
+</svg>

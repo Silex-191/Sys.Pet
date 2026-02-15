@@ -10,29 +10,35 @@ echo -e "${CYAN}=========================================${NC}"
 echo -e "${CYAN}   👾 SYSPET: SETUP PROTOCOL 👾        ${NC}"
 echo -e "${CYAN}=========================================${NC}\n"
 
-# Проверка Python
+# Установка системных зависимостей
+echo -e "${GREEN}[1/7] Проверка системных зависимостей...${NC}"
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python3 не найден!${NC}"
-    echo "Установи: sudo apt install python3 python3-pip python3-venv"
-    exit 1
+    echo -e "${RED}❌ Python3 не найден! Устанавливаю...${NC}"
+    sudo apt update && sudo apt install -y python3 python3-pip python3-venv
 fi
+echo -e "${GREEN}✅ Python3 найден: $(python3 --version)${NC}"
 
-echo -e "${GREEN}✅ Python3 найден: $(python3 --version)${NC}\n"
+# Установка stress-ng для стресс-тестов CPU
+if ! command -v stress-ng &> /dev/null; then
+    echo -e "${GREEN}Устанавливаю stress-ng для стресс-тестов CPU...${NC}"
+    sudo apt install -y stress-ng
+fi
+echo -e "${GREEN}✅ stress-ng установлен${NC}\n"
 
 # Создание venv
-echo -e "${GREEN}[1/4] Создание виртуального окружения...${NC}"
+echo -e "${GREEN}[2/7] Создание виртуального окружения...${NC}"
 python3 -m venv venv
 
 # Активация
-echo -e "${GREEN}[2/4] Активация окружения...${NC}"
+echo -e "${GREEN}[3/7] Активация окружения...${NC}"
 source venv/bin/activate
 
 # Обновление pip
-echo -e "${GREEN}[3/4] Обновление pip...${NC}"
+echo -e "${GREEN}[4/7] Обновление pip...${NC}"
 pip install --upgrade pip setuptools wheel > /dev/null 2>&1
 
 # Установка зависимостей
-echo -e "${GREEN}[4/4] Установка зависимостей...${NC}"
+echo -e "${GREEN}[5/7] Установка зависимостей...${NC}"
 if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
 else
@@ -41,7 +47,12 @@ else
 fi
 
 # Создание структуры (если нужна)
-mkdir -p backend frontend/templates frontend/static
+echo -e "${GREEN}[6/7] Создание необходимой структуры папок...${NC}"
+mkdir -p backend frontend/templates frontend/static frontend/static/emotions
+
+# Настройка прав доступа
+echo -e "${GREEN}[7/7] Настройка прав доступа для run.sh...${NC}"
+chmod +x run.sh
 
 echo -e "\n${CYAN}=========================================${NC}"
 echo -e "${CYAN}   ✅ SETUP COMPLETE                   ${NC}"
