@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass, field, asdict
 from typing import Tuple, List, Dict, Any
 from enum import Enum
+from .analyzer import analyzer
 
 # ===== КОНСТАНТЫ ИГРЫ =====
 XP_TO_NEXT_COURSE = 100
@@ -94,27 +95,21 @@ class SysPet:
         else:
             return PetStatus.HAPPY.value
 
-    def analyze_code(self, code: str) -> Tuple[bool, int]:
+    def analyze_code(self, code: str) -> Tuple[bool, int, Dict[str, Any]]:
         """
-        Анализирует код через regex паттерны.
-        Возвращает (найден_ли_паттерн, xp_награда)
+        Анализирует код через enhanced analyzer с поддержкой C/C++ и Python.
+        Возвращает (найден_ли_паттерн, xp_награда, метаданные)
         """
-        total_xp = 0
-        found_pattern = False
-
-        for pattern, xp_reward in PARITY_REGEXES:
-            if re.search(pattern, code):
-                total_xp += xp_reward
-                found_pattern = True
-
-        return found_pattern, total_xp
+        # Use enhanced analyzer with automatic fallback for large inputs
+        found, total_xp, metadata = analyzer.analyze(code)
+        return found, total_xp, metadata
 
     def feed(self, code: str) -> Dict[str, Any]:
         """
         Кормит питомца кодом.
         Возвращает информацию о результате.
         """
-        found, xp_gained = self.analyze_code(code)
+        found, xp_gained, metadata = self.analyze_code(code)
 
         if found:
             # Код вкусный!
@@ -133,6 +128,7 @@ class SysPet:
                 "success": True,
                 "message": f"Питомец съел код! +{xp_gained} XP",
                 "xp_gained": xp_gained,
+                "analysis": metadata,
                 "pet": self.to_dict()
             }
         else:
@@ -145,6 +141,7 @@ class SysPet:
                 "success": False,
                 "message": "Питомец не понял этот код...",
                 "xp_gained": 0,
+                "analysis": metadata,
                 "pet": self.to_dict()
             }
 

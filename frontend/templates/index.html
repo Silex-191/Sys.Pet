@@ -225,6 +225,42 @@
             text-transform: uppercase;
         }
 
+        .input-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .file-upload-btn {
+            padding: 8px 15px;
+            background: transparent;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            border-radius: 3px;
+        }
+
+        .file-upload-btn:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-info {
+            font-size: 0.8em;
+            color: var(--neon-pink);
+            flex-grow: 1;
+        }
+
         .code-input {
             width: 100%;
             padding: 10px;
@@ -242,6 +278,12 @@
             outline: none;
             box-shadow: 0 0 15px var(--neon-green);
             border-color: var(--neon-blue);
+        }
+
+        .input-hint {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 5px;
         }
 
         /* Buttons */
@@ -363,7 +405,13 @@
         <!-- CODE INPUT -->
         <div class="code-input-section">
             <label for="code-input">Корми питомца кодом:</label>
+            <div class="input-controls">
+                <input type="file" id="file-input" accept=".py,.c,.cpp,.h,.hpp,.txt,.md" />
+                <button class="file-upload-btn" id="upload-btn">📎 Загрузить файл</button>
+                <span class="file-info" id="file-info"></span>
+            </div>
             <textarea id="code-input" class="code-input" placeholder="Вставь код здесь... Питомец любит правильные проверки на четность!"></textarea>
+            <div class="input-hint">💡 Enter - отправить, Shift+Enter - новая строка</div>
         </div>
 
         <!-- BUTTONS -->
@@ -434,6 +482,9 @@
         const resetBtn = document.getElementById('reset-btn');
         const successMsg = document.getElementById('success-msg');
         const errorMsg = document.getElementById('error-msg');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInfo = document.getElementById('file-info');
 
         // ===== RENDER FUNCTIONS =====
         function renderStats() {
@@ -501,6 +552,33 @@
 
         setInterval(updatePet, 500);  // Обновлять каждые 500ms
 
+        // ===== FILE UPLOAD HANDLING =====
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const validExtensions = ['.py', '.c', '.cpp', '.h', '.hpp', '.txt', '.md'];
+            const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            
+            if (!validExtensions.includes(fileExt)) {
+                showMessage('Неподдерживаемый формат файла!', true);
+                return;
+            }
+
+            try {
+                const text = await file.text();
+                codeInput.value = text;
+                fileInfo.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                showMessage(`Файл "${file.name}" загружен!`);
+            } catch (err) {
+                showMessage('Ошибка чтения файла: ' + err.message, true);
+            }
+        });
+
         // ===== EVENT LISTENERS =====
         feedBtn.addEventListener('click', async () => {
             const code = codeInput.value.trim();
@@ -530,9 +608,12 @@
         });
 
         codeInput.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
+            // Enter without Shift: submit
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 feedBtn.click();
             }
+            // Shift+Enter: allow default (new line)
         });
 
         restBtn.addEventListener('click', async () => {
