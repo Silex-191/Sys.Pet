@@ -4,8 +4,9 @@ API для управления питомцем и игровой логико�
 """
 
 import asyncio
+import os
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Form
+from fastapi import FastAPI, HTTPException, Form, Body, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -114,6 +115,20 @@ async def health_check():
 
 # ===== API ROUTES =====
 
+@app.get("/api/state")
+async def get_state():
+    """Совместимость со старым фронтом: краткое состояние питомца"""
+    state = pet.to_dict()
+    return {
+        "sanity": state["hp"],
+        "happiness": state["happiness"],
+        "hunger": state["hunger"],
+        "xp": state["xp"],
+        "course": state["course"],
+        "last_action": pet.status_message,
+    }
+
+
 @app.get("/api/pet")
 async def get_pet_state():
     """Получить текущее состояние питомца"""
@@ -121,11 +136,19 @@ async def get_pet_state():
 
 
 @app.post("/api/feed")
-async def feed_pet(code: str = Form(...)):
+async def feed_pet(request: Request, code: str | None = Form(None)):
     """
     Покормить питомца кодом.
     Form param: code (строка с кодом)
     """
+    if code is None:
+        try:
+            payload = await request.json()
+            if isinstance(payload, dict):
+                code = payload.get("code")
+        except Exception:
+            code = None
+
     if not code or len(code) == 0:
         raise HTTPException(status_code=400, detail="Code cannot be empty")
 
@@ -184,6 +207,64 @@ async def get_system_stats():
 
 
 # ===== ОТЛАДКА =====
+@app.post("/api/upload_avatar")
+async def upload_avatar(file: UploadFile = File(...)):
+    """Загрузка аватара; сохраняется в static/avatar.png"""
+    static_dir = Path(__file__).parent.parent / "frontend" / "static"
+    static_dir.mkdir(parents=True, exist_ok=True)
+    avatar_path = static_dir / "avatar.png"
+
+    with avatar_path.open("wb") as f:
+        f.write(await file.read())
+
+    return {"status": "success", "url": "/static/avatar.png"}
+
+
+@app.get("/api/processes")
+async def list_processes():
+    """Список процессов (безопасное подмножество)"""
+    import psutil
+
+    current_uid = psutil.Process().uids().real if hasattr(psutil.Process(), "uids") else None
+    processes = []
+    for proc in psutil.process_iter(["pid", "name", "uids"]):
+        try:
+            if current_uid is not None and proc.info.get("uids") and proc.info["uids"].real != current_uid:
+                continue
+            processes.append({"pid": proc.info["pid"], "name": proc.info.get("name") or "unknown"})
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return processes[:30]
+
+
+@app.post("/api/kill_process")
+async def kill_process(payload: dict = Body(...)):
+    """Попытаться завершить процесс по PID (с ограничениями безопасности)"""
+    import psutil
+
+    pid = payload.get("pid")
+    if pid is None:
+        raise HTTPException(status_code=400, detail="pid is required")
+
+    try:
+        pid_int = int(pid)
+        if pid_int <= 0:
+            return {"success": False, "message": "Invalid pid"}
+        proc = psutil.Process(pid_int)
+        if proc.pid == os.getpid():
+            return {"success": False, "message": "Cannot terminate server process"}
+        proc.terminate()
+        try:
+            proc.wait(timeout=1)
+            return {"success": True, "pid": pid}
+        except psutil.TimeoutExpired:
+            return {"success": False, "message": "Timeout while terminating"}
+    except psutil.NoSuchProcess:
+        return {"success": False, "message": "Process not found"}
+    except psutil.AccessDenied:
+        return {"success": False, "message": "Access denied"}
+
+
 @app.get("/api/debug/info")
 async def debug_info():
     """Отладочная информация"""
